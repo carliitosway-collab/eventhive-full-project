@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../services/api.service";
+import eventsService from "../services/events.service";
 import EventCard from "../components/EventCard";
 
 export default function EventsListPage() {
@@ -11,12 +11,12 @@ export default function EventsListPage() {
     setIsLoading(true);
     setError("");
 
-    api
-      .get("/events") // ✅ baseURL ya incluye /api
-      .then((res) => setEvents(res.data.data || []))
+    eventsService
+      .getPublicEvents()
+      .then((res) => setEvents(res.data?.data || res.data || []))
       .catch((err) => {
         console.log(err);
-        setError("No pude cargar eventos (¿backend encendido? ¿CORS?)");
+        setError("No pude cargar eventos. Revisa que el backend esté encendido.");
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -28,7 +28,7 @@ export default function EventsListPage() {
         <p style={styles.subtitle}>Eventos públicos disponibles</p>
       </header>
 
-      {isLoading && <p style={styles.muted}>Cargando eventos… 🧘‍♂️</p>}
+      {isLoading && <p style={styles.muted}>Cargando eventos…</p>}
       {!isLoading && error && <p style={styles.error}>{error}</p>}
 
       {!isLoading && !error && events.length === 0 ? (
@@ -48,29 +48,12 @@ export default function EventsListPage() {
 }
 
 const styles = {
-  page: {
-    padding: 20,
-    maxWidth: 1000,
-    margin: "0 auto",
-  },
-  header: {
-    marginBottom: 14,
-  },
-  h1: {
-    margin: "0 0 6px",
-    fontSize: 44,
-  },
-  subtitle: {
-    margin: 0,
-    opacity: 0.75,
-    fontSize: 18,
-  },
-  muted: {
-    opacity: 0.75,
-  },
-  error: {
-    color: "crimson",
-  },
+  page: { padding: 20, maxWidth: 1000, margin: "0 auto" },
+  header: { marginBottom: 14 },
+  h1: { margin: "0 0 6px", fontSize: 44 },
+  subtitle: { margin: 0, opacity: 0.75, fontSize: 18 },
+  muted: { opacity: 0.75 },
+  error: { color: "crimson" },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
   FiMapPin,
@@ -11,12 +11,14 @@ import {
   FiLoader,
   FiTrash2,
   FiSend,
+  FiEdit2,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 
-import api from "../services/api.service";
 import favoritesService from "../services/favorites.service";
 import commentsService from "../services/comments.service";
+import eventsService from "../services/events.service";
 
 function IconText({ icon: Icon, children, style }) {
   return (
@@ -27,32 +29,52 @@ function IconText({ icon: Icon, children, style }) {
   );
 }
 
+function getNiceError(err) {
+  const status = err?.response?.status;
+
+  if (status === 401) return "Tu sesión expiró o no tienes acceso. Inicia sesión de nuevo.";
+  if (status === 403) return "No tienes permisos para hacer eso.";
+  if (status === 404) return "No encontré ese evento.";
+  if (!err?.response) return "No hay conexión o el servidor no responde.";
+
+  return err?.response?.data?.message || "Ha ocurrido un error.";
+}
+
 export default function EventDetailsPage() {
   const { eventId } = useParams();
+  const navigate = useNavigate();
 
   const [event, setEvent] = useState(null);
 
-  // ✅ comments state
+  // comments
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [isCommentLoading, setIsCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState("");
 
+  // favorites
   const [favoritesIds, setFavoritesIds] = useState([]);
 
+  // page
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // attend
   const [isAttendLoading, setIsAttendLoading] = useState(false);
   const [attendError, setAttendError] = useState("");
 
+  // fav
   const [isFavLoading, setIsFavLoading] = useState(false);
   const [favError, setFavError] = useState("");
+
+  // owner actions
+  const [isOwnerActionLoading, setIsOwnerActionLoading] = useState(false);
+  const [ownerError, setOwnerError] = useState("");
 
   const token = localStorage.getItem("authToken");
   const hasToken = !!token;
 
-  // ✅ userId desde JWT
+  // userId from JWT
   const userIdFromToken = useMemo(() => {
     if (!token) return null;
     try {
@@ -70,8 +92,8 @@ export default function EventDetailsPage() {
     setIsLoading(true);
     setError("");
 
-    api
-      .get(`/events/${eventId}`)
+    eventsService
+      .getEventDetails(eventId)
       .then((res) => {
         const payload = res.data?.data ?? res.data;
         const eventData = payload?.event ?? payload;
@@ -79,7 +101,7 @@ export default function EventDetailsPage() {
       })
       .catch((err) => {
         console.log(err);
-        setError("No pude cargar el detalle del evento.");
+        setError(getNiceError(err));
       })
       .finally(() => setIsLoading(false));
   };
@@ -89,9 +111,7 @@ export default function EventDetailsPage() {
 
     commentsService
       .getByEvent(eventId)
-      .then((res) => {
-        setComments(res.data?.data || []);
-      })
+      .then((res) => setComments(res.data?.data || []))
       .catch((err) => {
         console.log(err);
         setCommentError("No pude cargar comentarios.");
@@ -104,7 +124,6 @@ export default function EventDetailsPage() {
     favoritesService
       .getMyFavorites()
       .then((res) => {
-        // tu backend devuelve array directo (lo normal). Si llega {data: []} también lo cubrimos:
         const favs = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setFavoritesIds(favs.map((ev) => ev._id));
       })
@@ -127,6 +146,14 @@ export default function EventDetailsPage() {
     return favoritesIds.some((id) => String(id) === String(eventId));
   }, [favoritesIds, eventId]);
 
+  const isOwner = useMemo(() => {
+    if (!userIdFromToken || !event?.createdBy) return false;
+
+    const ownerId = typeof event.createdBy === "string" ? event.createdBy : event.createdBy?._id;
+
+    return String(ownerId) === String(userIdFromToken);
+  }, [event, userIdFromToken]);
+
   const dateText = event?.date ? new Date(event.date).toLocaleString() : "Sin fecha";
 
   const handleToggleAttend = () => {
@@ -138,15 +165,13 @@ export default function EventDetailsPage() {
     setIsAttendLoading(true);
     setAttendError("");
 
-    const request = isAttending
-      ? api.delete(`/events/${eventId}/join`)
-      : api.post(`/events/${eventId}/join`);
+    const request = isAttending ? eventsService.leaveEvent(eventId) : eventsService.joinEvent(eventId);
 
     request
       .then(() => fetchEvent())
       .catch((err) => {
         console.log(err);
-        setAttendError(err?.response?.data?.message || "No pude actualizar tu inscripción.");
+        setAttendError(getNiceError(err));
       })
       .finally(() => setIsAttendLoading(false));
   };
@@ -160,20 +185,17 @@ export default function EventDetailsPage() {
     setIsFavLoading(true);
     setFavError("");
 
-    const request = isFavorite
-      ? favoritesService.removeFavorite(eventId)
-      : favoritesService.addFavorite(eventId);
+    const request = isFavorite ? favoritesService.removeFavorite(eventId) : favoritesService.addFavorite(eventId);
 
     request
       .then(() => fetchFavorites())
       .catch((err) => {
         console.log(err);
-        setFavError(err?.response?.data?.message || "No pude actualizar favoritos.");
+        setFavError(getNiceError(err));
       })
       .finally(() => setIsFavLoading(false));
   };
 
-  // ✅ COMMENTS: create
   const handleCreateComment = (e) => {
     e.preventDefault();
 
@@ -194,19 +216,16 @@ export default function EventDetailsPage() {
     commentsService
       .create({ text: clean, eventId })
       .then(() => {
-        // 🔑 el comment creado viene sin populate(author),
-        // así que recargamos con GET para traer nombre/email correctamente
         setCommentText("");
         fetchComments();
       })
       .catch((err) => {
         console.log(err);
-        setCommentError(err?.response?.data?.message || "No pude publicar el comentario.");
+        setCommentError(getNiceError(err));
       })
       .finally(() => setIsCommentLoading(false));
   };
 
-  // ✅ COMMENTS: delete
   const handleDeleteComment = (commentId) => {
     if (!hasToken) {
       setCommentError("Necesitas login.");
@@ -215,13 +234,39 @@ export default function EventDetailsPage() {
 
     commentsService
       .remove(commentId)
-      .then(() => {
-        setComments((prev) => prev.filter((c) => c._id !== commentId));
-      })
+      .then(() => setComments((prev) => prev.filter((c) => c._id !== commentId)))
       .catch((err) => {
         console.log(err);
-        setCommentError(err?.response?.data?.message || "No pude borrar el comentario.");
+        setCommentError(getNiceError(err));
       });
+  };
+
+  const handleDeleteEvent = () => {
+    setOwnerError("");
+
+    if (!hasToken) {
+      setOwnerError("Necesitas login.");
+      return;
+    }
+
+    if (!isOwner) {
+      setOwnerError("No tienes permisos para borrar este evento.");
+      return;
+    }
+
+    const ok = window.confirm("¿Seguro que quieres borrar este evento? Esta acción no se puede deshacer.");
+    if (!ok) return;
+
+    setIsOwnerActionLoading(true);
+
+    eventsService
+      .deleteEvent(eventId)
+      .then(() => navigate("/my-events"))
+      .catch((err) => {
+        console.log(err);
+        setOwnerError(getNiceError(err));
+      })
+      .finally(() => setIsOwnerActionLoading(false));
   };
 
   if (isLoading) {
@@ -230,7 +275,9 @@ export default function EventDetailsPage() {
         <Link to="/events" style={styles.backLink}>
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
+
         <h1 style={styles.h1}>Event Details</h1>
+
         <p style={styles.muted}>
           <IconText icon={FiLoader}>Cargando…</IconText>
         </p>
@@ -244,8 +291,12 @@ export default function EventDetailsPage() {
         <Link to="/events" style={styles.backLink}>
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
+
         <h1 style={styles.h1}>Event Details</h1>
-        <p style={styles.error}>{error}</p>
+
+        <p style={styles.error}>
+          <IconText icon={FiAlertTriangle}>{error}</IconText>
+        </p>
       </div>
     );
   }
@@ -256,6 +307,7 @@ export default function EventDetailsPage() {
         <Link to="/events" style={styles.backLink}>
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
+
         <h1 style={styles.h1}>Event Details</h1>
         <p style={styles.muted}>No encontré el evento.</p>
       </div>
@@ -293,8 +345,7 @@ export default function EventDetailsPage() {
 
         {event.createdBy && (
           <div style={{ marginTop: 12, opacity: 0.8 }}>
-            <span style={{ fontWeight: 600 }}>Creado por:</span>{" "}
-            {event.createdBy.name || event.createdBy.email || "—"}
+            <span style={{ fontWeight: 700 }}>Creado por:</span> {event.createdBy.name || event.createdBy.email || "—"}
           </div>
         )}
 
@@ -302,10 +353,7 @@ export default function EventDetailsPage() {
           <button
             onClick={handleToggleAttend}
             disabled={!hasToken || isAttendLoading}
-            style={{
-              ...styles.btn,
-              opacity: !hasToken || isAttendLoading ? 0.6 : 1,
-            }}
+            style={{ ...styles.btn, opacity: !hasToken || isAttendLoading ? 0.6 : 1 }}
           >
             {isAttendLoading ? "Procesando…" : isAttending ? "Salir (Leave)" : "Inscribirme (Attend)"}
           </button>
@@ -347,10 +395,36 @@ export default function EventDetailsPage() {
           {!hasToken && <span style={{ opacity: 0.7 }}>(haz login para interactuar)</span>}
         </div>
 
+        {isOwner && (
+          <div style={styles.ownerActionsRow}>
+            <Link
+              to={`/events/edit/${eventId}`}
+              style={{
+                ...styles.btn,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <IconText icon={FiEdit2}>Editar</IconText>
+            </Link>
+
+            <button
+              type="button"
+              onClick={handleDeleteEvent}
+              disabled={isOwnerActionLoading}
+              style={{ ...styles.deleteEventBtn, opacity: isOwnerActionLoading ? 0.6 : 1 }}
+            >
+              <IconText icon={FiTrash2}>{isOwnerActionLoading ? "Borrando…" : "Borrar"}</IconText>
+            </button>
+          </div>
+        )}
+
         {attendError && <p style={{ ...styles.error, marginTop: 10 }}>{attendError}</p>}
         {favError && <p style={{ ...styles.error, marginTop: 10 }}>{favError}</p>}
+        {ownerError && <p style={{ ...styles.error, marginTop: 10 }}>{ownerError}</p>}
 
-        {/* ✅ COMMENTS SECTION */}
         <div style={styles.commentsBox}>
           <div style={styles.commentsHeader}>
             <IconText icon={FiMessageCircle}>
@@ -358,7 +432,6 @@ export default function EventDetailsPage() {
             </IconText>
           </div>
 
-          {/* Create comment */}
           <form onSubmit={handleCreateComment} style={styles.commentForm}>
             <textarea
               value={commentText}
@@ -368,6 +441,7 @@ export default function EventDetailsPage() {
               style={styles.textarea}
               rows={3}
             />
+
             <button
               type="submit"
               disabled={!hasToken || isCommentLoading}
@@ -386,7 +460,6 @@ export default function EventDetailsPage() {
 
           {commentError && <p style={{ ...styles.error, marginTop: 10 }}>{commentError}</p>}
 
-          {/* Comments list */}
           {comments.length === 0 ? (
             <p style={{ ...styles.muted, marginTop: 10 }}>Todavía no hay comentarios.</p>
           ) : (
@@ -448,6 +521,7 @@ const styles = {
   metaRow: { display: "flex", gap: 14, flexWrap: "wrap", opacity: 0.85, fontSize: 14 },
   metaItem: { display: "inline-flex", alignItems: "center", gap: 6 },
   actionsRow: { marginTop: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" },
+  ownerActionsRow: { marginTop: 12, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" },
   btn: {
     padding: "10px 14px",
     borderRadius: 12,
@@ -457,24 +531,22 @@ const styles = {
     boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
     fontWeight: 600,
   },
-
-  // ✅ comments styles
-  commentsBox: {
-    marginTop: 18,
-    paddingTop: 14,
-    borderTop: "1px solid rgba(0,0,0,0.08)",
-  },
-  commentsHeader: {
-    display: "flex",
+  deleteEventBtn: {
+    padding: "10px 14px",
+    borderRadius: 12,
+    border: "1px solid rgba(220, 0, 0, 0.25)",
+    background: "white",
+    cursor: "pointer",
+    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
+    fontWeight: 700,
+    color: "crimson",
+    display: "inline-flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    gap: 8,
   },
-  commentForm: {
-    display: "grid",
-    gap: 10,
-    marginTop: 10,
-  },
+  commentsBox: { marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(0,0,0,0.08)" },
+  commentsHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  commentForm: { display: "grid", gap: 10, marginTop: 10 },
   textarea: {
     width: "100%",
     borderRadius: 12,

@@ -1,11 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { FiMapPin, FiCalendar } from "react-icons/fi";
 
 export default function EventCard({ event }) {
   const navigate = useNavigate();
 
-  const dateText = event?.date
-    ? new Date(event.date).toLocaleString()
-    : "Sin fecha";
+  const dateText = event?.date ? new Date(event.date).toLocaleString() : "Sin fecha";
 
   const goToDetail = () => {
     navigate(`/events/${event._id}`);
@@ -30,9 +29,11 @@ export default function EventCard({ event }) {
 
       <div style={styles.metaRow}>
         <span style={styles.metaItem}>
-          📍 {event.location || "Sin ubicación"}
+          <FiMapPin /> {event.location || "Sin ubicación"}
         </span>
-        <span style={styles.metaItem}>🗓️ {dateText}</span>
+        <span style={styles.metaItem}>
+          <FiCalendar /> {dateText}
+        </span>
       </div>
 
       <div style={styles.hint}>Ver detalles →</div>
@@ -58,10 +59,7 @@ const styles = {
     gap: 12,
     marginBottom: 6,
   },
-  title: {
-    margin: 0,
-    fontSize: 18,
-  },
+  title: { margin: 0, fontSize: 18 },
   badge: {
     fontSize: 12,
     padding: "4px 10px",
@@ -70,26 +68,8 @@ const styles = {
     opacity: 0.85,
     whiteSpace: "nowrap",
   },
-  desc: {
-    margin: "8px 0 12px",
-    opacity: 0.8,
-    lineHeight: 1.35,
-  },
-  metaRow: {
-    display: "flex",
-    gap: 14,
-    flexWrap: "wrap",
-    opacity: 0.85,
-    fontSize: 14,
-  },
-  metaItem: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-  },
-  hint: {
-    marginTop: 12,
-    fontSize: 13,
-    opacity: 0.6,
-  },
+  desc: { margin: "8px 0 12px", opacity: 0.8, lineHeight: 1.35 },
+  metaRow: { display: "flex", gap: 14, flexWrap: "wrap", opacity: 0.85, fontSize: 14 },
+  metaItem: { display: "inline-flex", alignItems: "center", gap: 6 },
+  hint: { marginTop: 12, fontSize: 13, opacity: 0.6 },
 };

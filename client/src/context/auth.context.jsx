@@ -19,31 +19,35 @@ function AuthProviderWrapper({ children }) {
       setIsLoggedIn(false);
       setUser(null);
       setIsLoading(false);
-      return;
+      return Promise.resolve();
     }
 
-    authService
+    return authService
       .verify()
       .then((response) => {
+        // Tu backend devuelve req.payload en response.data
         setIsLoggedIn(true);
-        setUser(response.data); // payload del token (tu backend devuelve req.payload)
-        setIsLoading(false);
+        setUser(response.data);
       })
-      .catch(() => {
-        // token inválido/expirado
+      .catch((err) => {
+        // ✅ si token inválido/expirado -> limpiar TODO
+        console.log("verify failed:", err?.response?.status);
+        removeToken();
         setIsLoggedIn(false);
         setUser(null);
-        setIsLoading(false);
-      });
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const logOutUser = () => {
     removeToken();
-    authenticateUser();
+    setIsLoggedIn(false);
+    setUser(null);
   };
 
   useEffect(() => {
     authenticateUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

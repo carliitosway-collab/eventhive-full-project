@@ -18,58 +18,35 @@ export default function EventCard({ event }) {
       onKeyDown={(e) => {
         if (e.key === "Enter") goToDetail();
       }}
-      style={styles.card}
+      className="card bg-base-100 border border-base-300 rounded-2xl shadow-sm hover:shadow-md transition cursor-pointer"
     >
-      <div style={styles.topRow}>
-        <h3 style={styles.title}>{event.title}</h3>
-        <span style={styles.badge}>{event.isPublic ? "Public" : "Private"}</span>
+      <div className="card-body">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="card-title text-base md:text-lg">{event?.title || "Untitled"}</h3>
+
+          <span className={`badge ${event?.isPublic ? "badge-outline" : "badge-neutral"}`}>
+            {event?.isPublic ? "Public" : "Private"}
+          </span>
+        </div>
+
+        <p className="opacity-80 line-clamp-3">
+          {event?.description || "Sin descripción"}
+        </p>
+
+        <div className="flex flex-wrap gap-3 text-sm opacity-80">
+          <span className="inline-flex items-center gap-2">
+            <FiMapPin />
+            {event?.location || "Sin ubicación"}
+          </span>
+
+          <span className="inline-flex items-center gap-2">
+            <FiCalendar />
+            {dateText}
+          </span>
+        </div>
+
+        <div className="text-xs opacity-60 mt-2">Ver detalles →</div>
       </div>
-
-      <p style={styles.desc}>{event.description || "Sin descripción"}</p>
-
-      <div style={styles.metaRow}>
-        <span style={styles.metaItem}>
-          <FiMapPin /> {event.location || "Sin ubicación"}
-        </span>
-        <span style={styles.metaItem}>
-          <FiCalendar /> {dateText}
-        </span>
-      </div>
-
-      <div style={styles.hint}>Ver detalles →</div>
     </article>
   );
 }
-
-const styles = {
-  card: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-    cursor: "pointer",
-    userSelect: "none",
-    transition: "transform 0.15s ease, box-shadow 0.15s ease",
-  },
-  topRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 6,
-  },
-  title: { margin: 0, fontSize: 18 },
-  badge: {
-    fontSize: 12,
-    padding: "4px 10px",
-    borderRadius: 999,
-    border: "1px solid rgba(0,0,0,0.12)",
-    opacity: 0.85,
-    whiteSpace: "nowrap",
-  },
-  desc: { margin: "8px 0 12px", opacity: 0.8, lineHeight: 1.35 },
-  metaRow: { display: "flex", gap: 14, flexWrap: "wrap", opacity: 0.85, fontSize: 14 },
-  metaItem: { display: "inline-flex", alignItems: "center", gap: 6 },
-  hint: { marginTop: 12, fontSize: 13, opacity: 0.6 },
-};

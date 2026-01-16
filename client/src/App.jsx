@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import IsPrivate from "./components/IsPrivate";
 import IsAnon from "./components/IsAnon";
 import Navbar from "./components/Navbar";
+import "./index.css";
 
 // Pages
 import HomePage from "./pages/HomePage";

@@ -16,9 +16,9 @@ import { AuthContext } from "../context/auth.context";
 import eventsService from "../services/events.service";
 import EventCard from "../components/EventCard";
 
-function IconText({ icon: Icon, children, style }) {
+function IconText({ icon: Icon, children, className }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...style }}>
+    <span className={`inline-flex items-center gap-2 ${className || ""}`}>
       <Icon />
       {children}
     </span>
@@ -68,284 +68,149 @@ export default function HomePage() {
   }, [events]);
 
   return (
-    <div style={styles.page}>
+    <div className="max-w-6xl mx-auto px-4 py-6">
       {/* HERO */}
-      <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <p style={styles.kicker}>EventHive</p>
-          <h1 style={styles.title}>Descubre eventos y únete en un click</h1>
-          <p style={styles.lead}>
-            Eventos públicos, favoritos, asistencia y comentarios. Todo en un solo sitio, simple y rápido.
-          </p>
+      <section className="bg-base-100 border rounded-2xl shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+          {/* Left */}
+          <div className="flex flex-col gap-4">
+            <p className="text-sm font-bold opacity-70 tracking-wide">EventHive</p>
 
-          <div style={styles.ctaRow}>
-            <Link to="/events" style={styles.primaryBtn}>
-              <IconText icon={FiArrowRight}>Ver eventos</IconText>
-            </Link>
+            <h1 className="text-4xl md:text-5xl font-black leading-tight">
+              Descubre eventos y únete en un click
+            </h1>
 
-            {isLoggedIn ? (
-              <Link to="/events/new" style={styles.secondaryBtn}>
-                <IconText icon={FiPlus}>Crear evento</IconText>
-              </Link>
-            ) : (
-              <Link to="/signup" style={styles.secondaryBtn}>
-                <IconText icon={FiLogIn}>Crear cuenta</IconText>
-              </Link>
-            )}
-          </div>
-
-          <div style={styles.badgesRow}>
-            <span style={styles.badge}>
-              <IconText icon={FiUsers}>Attend</IconText>
-            </span>
-            <span style={styles.badge}>
-              <IconText icon={FiHeart}>Favorites</IconText>
-            </span>
-            <span style={styles.badge}>
-              <IconText icon={FiMessageCircle}>Comments</IconText>
-            </span>
-            <span style={styles.badge}>
-              <IconText icon={FiCalendar}>Upcoming</IconText>
-            </span>
-          </div>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.heroCard}>
-            <p style={styles.heroCardTitle}>Tip rápido</p>
-            <p style={styles.heroCardText}>
-              Guarda tus eventos favoritos para tenerlos a mano y vuelve cuando quieras.
+            <p className="text-base opacity-80 max-w-xl">
+              Eventos públicos, favoritos, asistencia y comentarios. Todo en un solo sitio, simple y rápido.
             </p>
 
-            <div style={styles.heroCardFooter}>
-              <Link to="/favorites" style={styles.link}>
-                <IconText icon={FiHeart}>Ir a favoritos</IconText>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/events" className="btn btn-primary">
+                <IconText icon={FiArrowRight}>Ver eventos</IconText>
               </Link>
+
+              {isLoggedIn ? (
+                <Link to="/events/new" className="btn btn-outline">
+                  <IconText icon={FiPlus}>Crear evento</IconText>
+                </Link>
+              ) : (
+                <Link to="/signup" className="btn btn-outline">
+                  <IconText icon={FiLogIn}>Crear cuenta</IconText>
+                </Link>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <span className="badge badge-outline">
+                <IconText icon={FiUsers} className="text-sm">Attend</IconText>
+              </span>
+              <span className="badge badge-outline">
+                <IconText icon={FiHeart} className="text-sm">Favorites</IconText>
+              </span>
+              <span className="badge badge-outline">
+                <IconText icon={FiMessageCircle} className="text-sm">Comments</IconText>
+              </span>
+              <span className="badge badge-outline">
+                <IconText icon={FiCalendar} className="text-sm">Upcoming</IconText>
+              </span>
+            </div>
+          </div>
+
+          {/* Right tip */}
+          <div className="flex">
+            <div className="card w-full bg-base-100 border rounded-2xl">
+              <div className="card-body">
+                <h2 className="card-title">Tip rápido</h2>
+                <p className="opacity-80">
+                  Guarda tus eventos favoritos para tenerlos a mano y vuelve cuando quieras.
+                </p>
+
+                <div className="card-actions justify-start pt-2">
+                  <Link to="/favorites" className="btn btn-ghost">
+                    <IconText icon={FiHeart}>Ir a favoritos</IconText>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={styles.howItWorks}>
-        <h2 style={styles.h2}>Cómo funciona</h2>
+      <section className="mt-8 bg-base-100 border rounded-2xl shadow-sm p-6">
+        <h2 className="text-2xl font-extrabold">Cómo funciona</h2>
 
-        <div style={styles.stepsGrid}>
-          <div style={styles.stepCard}>
-            <h3 style={styles.stepTitle}>1. Explora eventos</h3>
-            <p style={styles.stepText}>
-              Descubre eventos públicos y entra al detalle para ver fecha, ubicación y asistentes.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="card bg-base-100 border rounded-xl">
+            <div className="card-body">
+              <h3 className="card-title">1. Explora eventos</h3>
+              <p className="opacity-80">
+                Descubre eventos públicos y entra al detalle para ver fecha, ubicación y asistentes.
+              </p>
+            </div>
           </div>
 
-          <div style={styles.stepCard}>
-            <h3 style={styles.stepTitle}>2. Interactúa</h3>
-            <p style={styles.stepText}>
-              Inscríbete, guarda eventos en favoritos y participa en los comentarios.
-            </p>
+          <div className="card bg-base-100 border rounded-xl">
+            <div className="card-body">
+              <h3 className="card-title">2. Interactúa</h3>
+              <p className="opacity-80">
+                Inscríbete, guarda eventos en favoritos y participa en los comentarios.
+              </p>
+            </div>
           </div>
 
-          <div style={styles.stepCard}>
-            <h3 style={styles.stepTitle}>3. Organízate</h3>
-            <p style={styles.stepText}>
-              Accede a tus favoritos cuando quieras o crea tus propios eventos.
-            </p>
+          <div className="card bg-base-100 border rounded-xl">
+            <div className="card-body">
+              <h3 className="card-title">3. Organízate</h3>
+              <p className="opacity-80">
+                Accede a tus favoritos cuando quieras o crea tus propios eventos.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* UPCOMING PREVIEW */}
-      <section style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.h2}>Próximos eventos</h2>
-          <Link to="/events" style={styles.link}>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="text-2xl font-extrabold">Próximos eventos</h2>
+          <Link to="/events" className="link link-hover font-semibold">
             <IconText icon={FiArrowRight}>Ver todos</IconText>
           </Link>
         </div>
 
-        {isLoading ? (
-          <p style={styles.muted}>
-            <IconText icon={FiLoader}>Cargando eventos…</IconText>
-          </p>
-        ) : error ? (
-          <div style={styles.errorBox}>
-            <p style={styles.errorText}>
-              <IconText icon={FiAlertTriangle}>{error}</IconText>
+        <div className="mt-4">
+          {isLoading ? (
+            <p className="opacity-75">
+              <IconText icon={FiLoader}>Cargando eventos…</IconText>
             </p>
-            <button type="button" onClick={fetchUpcoming} style={styles.retryBtn}>
-              Reintentar
-            </button>
-          </div>
-        ) : upcoming.length === 0 ? (
-          <div style={styles.emptyCard}>
-            <p style={styles.muted}>No hay eventos próximos todavía.</p>
-            <Link to="/events" style={{ ...styles.primaryBtn, textDecoration: "none", width: "fit-content" }}>
-              <IconText icon={FiArrowRight}>Explorar eventos</IconText>
-            </Link>
-          </div>
-        ) : (
-          <div style={styles.grid}>
-            {upcoming.map((ev) => (
-              <EventCard key={ev._id} event={ev} />
-            ))}
-          </div>
-        )}
+          ) : error ? (
+            <div className="alert alert-error">
+              <IconText icon={FiAlertTriangle}>{error}</IconText>
+              <button type="button" onClick={fetchUpcoming} className="btn btn-sm btn-outline">
+                Reintentar
+              </button>
+            </div>
+          ) : upcoming.length === 0 ? (
+            <div className="card bg-base-100 border rounded-2xl">
+              <div className="card-body">
+                <p className="opacity-75">No hay eventos próximos todavía.</p>
+                <div className="card-actions">
+                  <Link to="/events" className="btn btn-primary">
+                    <IconText icon={FiArrowRight}>Explorar eventos</IconText>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {upcoming.map((ev) => (
+                <EventCard key={ev._id} event={ev} />
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
 }
-
-const styles = {
-  page: { padding: 20, maxWidth: 1100, margin: "0 auto" },
-
-  hero: {
-    display: "grid",
-    gridTemplateColumns: "1.4fr 0.9fr",
-    gap: 16,
-    alignItems: "stretch",
-    padding: 18,
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 18,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-  heroLeft: { padding: 10 },
-  heroRight: { display: "flex", alignItems: "stretch" },
-
-  kicker: { margin: 0, opacity: 0.75, fontWeight: 700, letterSpacing: 0.4 },
-  title: { margin: "6px 0 8px", fontSize: 44, lineHeight: 1.05 },
-  lead: { margin: 0, opacity: 0.82, lineHeight: 1.5, maxWidth: 560 },
-
-  ctaRow: { display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" },
-  primaryBtn: {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-    fontWeight: 700,
-    textDecoration: "none",
-    color: "inherit",
-    display: "inline-flex",
-    alignItems: "center",
-  },
-  secondaryBtn: {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.12)",
-    background: "white",
-    cursor: "pointer",
-    fontWeight: 700,
-    textDecoration: "none",
-    color: "inherit",
-    display: "inline-flex",
-    alignItems: "center",
-  },
-
-  badgesRow: { display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" },
-  badge: {
-    border: "1px solid rgba(0,0,0,0.10)",
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: "white",
-    opacity: 0.92,
-    fontSize: 13,
-    fontWeight: 700,
-  },
-
-  heroCard: {
-    width: "100%",
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-  heroCardTitle: { margin: 0, fontWeight: 800, opacity: 0.85 },
-  heroCardText: { margin: "10px 0 0", opacity: 0.8, lineHeight: 1.45 },
-  heroCardFooter: { marginTop: 14 },
-
-  howItWorks: {
-    marginTop: 20,
-    padding: 18,
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 18,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-
-  stepsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 14,
-    marginTop: 12,
-  },
-
-  stepCard: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 14,
-    padding: 14,
-    background: "white",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
-  },
-
-  stepTitle: {
-    margin: "0 0 6px",
-    fontSize: 18,
-    fontWeight: 800,
-  },
-
-  stepText: {
-    margin: 0,
-    opacity: 0.8,
-    lineHeight: 1.45,
-  },
-
-  section: { marginTop: 18 },
-  sectionHeader: {
-    display: "flex",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 10,
-  },
-  h2: { margin: 0, fontSize: 26 },
-  link: { textDecoration: "none", color: "inherit", opacity: 0.85, fontWeight: 700 },
-
-  grid: { display: "grid", gap: 12 },
-
-  muted: { opacity: 0.75 },
-  emptyCard: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-    display: "grid",
-    gap: 10,
-  },
-
-  errorBox: {
-    border: "1px solid rgba(220, 0, 0, 0.18)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-    display: "grid",
-    gap: 10,
-  },
-  errorText: { margin: 0, color: "crimson" },
-  retryBtn: {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    background: "white",
-    cursor: "pointer",
-    fontWeight: 700,
-    width: "fit-content",
-  },
-};

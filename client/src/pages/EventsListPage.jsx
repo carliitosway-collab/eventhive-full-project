@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
+import { FiLoader, FiAlertTriangle } from "react-icons/fi";
+
 import eventsService from "../services/events.service";
 import EventCard from "../components/EventCard";
+import PageLayout from "../layouts/PageLayout";
+
+function IconText({ icon: Icon, children, className = "" }) {
+  return (
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <Icon />
+      {children}
+    </span>
+  );
+}
 
 export default function EventsListPage() {
   const [events, setEvents] = useState([]);
@@ -22,42 +34,33 @@ export default function EventsListPage() {
   }, []);
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.h1}>Events</h1>
-        <p style={styles.subtitle}>Eventos públicos disponibles</p>
+    <PageLayout>
+      <header className="mb-6">
+        <h1 className="text-4xl md:text-5xl font-black">Events</h1>
+        <p className="opacity-70 mt-2">Eventos públicos disponibles</p>
       </header>
 
-      {isLoading && <p style={styles.muted}>Cargando eventos…</p>}
-      {!isLoading && error && <p style={styles.error}>{error}</p>}
-
-      {!isLoading && !error && events.length === 0 ? (
-        <p style={styles.muted}>No events yet.</p>
-      ) : (
-        !isLoading &&
-        !error && (
-          <div style={styles.grid}>
-            {events.map((ev) => (
-              <EventCard key={ev._id} event={ev} />
-            ))}
+      {isLoading ? (
+        <p className="opacity-75">
+          <IconText icon={FiLoader}>Cargando eventos…</IconText>
+        </p>
+      ) : error ? (
+        <div className="alert alert-error">
+          <IconText icon={FiAlertTriangle}>{error}</IconText>
+        </div>
+      ) : events.length === 0 ? (
+        <div className="card bg-base-100 border rounded-2xl">
+          <div className="card-body">
+            <p className="opacity-75">No events yet.</p>
           </div>
-        )
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {events.map((ev) => (
+            <EventCard key={ev._id} event={ev} />
+          ))}
+        </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
-
-const styles = {
-  page: { padding: 20, maxWidth: 1000, margin: "0 auto" },
-  header: { marginBottom: 14 },
-  h1: { margin: "0 0 6px", fontSize: 44 },
-  subtitle: { margin: 0, opacity: 0.75, fontSize: 18 },
-  muted: { opacity: 0.75 },
-  error: { color: "crimson" },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: 14,
-    marginTop: 14,
-  },
-};

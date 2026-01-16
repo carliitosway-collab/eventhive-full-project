@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FiArrowLeft, FiLoader, FiAlertTriangle } from "react-icons/fi";
+
 import eventsService from "../services/events.service";
 import EventCard from "../components/EventCard";
 import { getNiceHttpError } from "../utils/httpErrors";
+import PageLayout from "../layouts/PageLayout";
 
-function IconText({ icon: Icon, children, style }) {
+function IconText({ icon: Icon, children, className = "" }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...style }}>
+    <span className={`inline-flex items-center gap-2 ${className}`}>
       <Icon />
       {children}
     </span>
@@ -40,97 +42,53 @@ export default function AttendingPage() {
     fetchAttending();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
-          <IconText icon={FiArrowLeft}>Volver</IconText>
-        </Link>
-
-        <h1 style={styles.h1}>Attending</h1>
-
-        <p style={styles.muted}>
-          <IconText icon={FiLoader}>Cargando…</IconText>
-        </p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
-          <IconText icon={FiArrowLeft}>Volver</IconText>
-        </Link>
-
-        <h1 style={styles.h1}>Attending</h1>
-
-        <p style={styles.error}>
-          <IconText icon={FiAlertTriangle}>{error}</IconText>
-        </p>
-
-        <button type="button" onClick={fetchAttending} style={styles.btn}>
-          Reintentar
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div style={styles.page}>
-      <Link to="/events" style={styles.backLink}>
+    <PageLayout>
+      <Link to="/events" className="link link-hover inline-flex items-center gap-2 opacity-80">
         <IconText icon={FiArrowLeft}>Volver</IconText>
       </Link>
 
-      <header style={{ marginBottom: 14 }}>
-        <h1 style={styles.h1}>Attending</h1>
-        <p style={styles.subtitle}>{events.length} eventos</p>
+      <header className="mt-3 mb-6">
+        <h1 className="text-4xl md:text-5xl font-black">Attending</h1>
+
+        {!isLoading && !error && (
+          <p className="opacity-70 mt-2">{events.length} eventos</p>
+        )}
       </header>
 
-      {events.length === 0 ? (
-        <div style={styles.card}>
-          <p style={styles.muted}>Todavía no estás inscrito en ningún evento.</p>
-          <Link to="/events" style={{ ...styles.btn, textDecoration: "none", display: "inline-flex" }}>
-            Ver eventos
-          </Link>
+      {isLoading ? (
+        <p className="opacity-75">
+          <IconText icon={FiLoader}>Cargando…</IconText>
+        </p>
+      ) : error ? (
+        <div className="space-y-3">
+          <div className="alert alert-error">
+            <IconText icon={FiAlertTriangle}>{error}</IconText>
+          </div>
+
+          <button type="button" onClick={fetchAttending} className="btn btn-outline btn-sm">
+            Reintentar
+          </button>
+        </div>
+      ) : events.length === 0 ? (
+        <div className="card bg-base-100 border rounded-2xl">
+          <div className="card-body">
+            <p className="opacity-75">Todavía no estás inscrito en ningún evento.</p>
+
+            <div className="card-actions">
+              <Link to="/events" className="btn btn-primary">
+                Ver eventos
+              </Link>
+            </div>
+          </div>
         </div>
       ) : (
-        <div style={styles.grid}>
+        <div className="grid gap-4">
           {events.map((ev) => (
             <EventCard key={ev._id} event={ev} />
           ))}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
-
-const styles = {
-  page: { padding: 20, maxWidth: 900, margin: "0 auto" },
-  backLink: { display: "inline-block", marginBottom: 12, textDecoration: "none", opacity: 0.8 },
-  h1: { margin: "0 0 6px", fontSize: 42 },
-  subtitle: { margin: 0, opacity: 0.7, fontSize: 16 },
-  muted: { opacity: 0.75 },
-  error: { color: "crimson", marginBottom: 12 },
-
-  grid: { display: "grid", gap: 12 },
-
-  card: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-
-  btn: {
-    marginTop: 10,
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-    fontWeight: 600,
-  },
-};

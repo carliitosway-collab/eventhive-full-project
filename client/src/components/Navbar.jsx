@@ -1,84 +1,118 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/auth.context";
-import { FiUser, FiLogOut } from "react-icons/fi";
+import { FiUser, FiLogOut, FiLogIn } from "react-icons/fi";
 
 export default function Navbar() {
   const { isLoggedIn, user, logOutUser } = useContext(AuthContext);
 
-  return (
-    <nav style={styles.nav}>
-      <div style={styles.left}>
-        <Link to="/">Home</Link>
-        <Link to="/events">Events</Link>
+  const linkClass = ({ isActive }) =>
+    `btn btn-ghost btn-sm ${isActive ? "btn-active" : ""}`;
 
-        {isLoggedIn && (
-          <>
-            <Link to="/my-events">My Events</Link>
-            <Link to="/attending">Attending</Link>
-            <Link to="/favorites">Favorites</Link>
-            <Link to="/events/new">New Event</Link>
-          </>
-        )}
+  return (
+    <div className="navbar bg-base-100 border-b border-base-300">
+      <div className="navbar-start">
+        {/* Brand */}
+        <Link to="/" className="btn btn-ghost text-lg font-black">
+          EventHive
+        </Link>
       </div>
 
-      <div style={styles.right}>
+      <div className="navbar-center hidden md:flex">
+        <ul className="menu menu-horizontal px-1 gap-1">
+          <li>
+            <NavLink to="/" className={linkClass}>
+              Home
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/events" className={linkClass}>
+              Events
+            </NavLink>
+          </li>
+
+          {isLoggedIn && (
+            <>
+              <li>
+                <NavLink to="/my-events" className={linkClass}>
+                  My Events
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/attending" className={linkClass}>
+                  Attending
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/favorites" className={linkClass}>
+                  Favorites
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/events/new" className={linkClass}>
+                  New Event
+                </NavLink>
+              </li>
+            </>
+          )}
+        </ul>
+      </div>
+
+      <div className="navbar-end gap-2">
         {isLoggedIn ? (
           <>
-            <span style={styles.user}>
+            <div className="hidden sm:flex items-center gap-2 opacity-80">
               <FiUser />
-              {user?.name || "User"}
-            </span>
+              <span className="font-semibold">{user?.name || "User"}</span>
+            </div>
 
-            <button onClick={logOutUser} style={styles.logoutBtn}>
+            <button type="button" onClick={logOutUser} className="btn btn-outline btn-sm">
               <FiLogOut />
               Logout
             </button>
           </>
         ) : (
           <>
-            <Link to="/signup">Signup</Link>
-            <Link to="/login">Login</Link>
+            <NavLink to="/signup" className="btn btn-ghost btn-sm">
+              Signup
+            </NavLink>
+            <NavLink to="/login" className="btn btn-primary btn-sm">
+              <FiLogIn />
+              Login
+            </NavLink>
           </>
         )}
+
+        {/* Mobile dropdown */}
+        <div className="dropdown dropdown-end md:hidden">
+          <label tabIndex={0} className="btn btn-ghost btn-sm">
+            Menu
+          </label>
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu p-2 shadow bg-base-100 border border-base-300 rounded-box w-52"
+          >
+            <li><NavLink to="/" className={linkClass}>Home</NavLink></li>
+            <li><NavLink to="/events" className={linkClass}>Events</NavLink></li>
+
+            {isLoggedIn && (
+              <>
+                <li><NavLink to="/my-events" className={linkClass}>My Events</NavLink></li>
+                <li><NavLink to="/attending" className={linkClass}>Attending</NavLink></li>
+                <li><NavLink to="/favorites" className={linkClass}>Favorites</NavLink></li>
+                <li><NavLink to="/events/new" className={linkClass}>New Event</NavLink></li>
+              </>
+            )}
+
+            {!isLoggedIn && (
+              <>
+                <li><NavLink to="/signup" className={linkClass}>Signup</NavLink></li>
+                <li><NavLink to="/login" className={linkClass}>Login</NavLink></li>
+              </>
+            )}
+          </ul>
+        </div>
       </div>
-    </nav>
+    </div>
   );
 }
-
-const styles = {
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 12,
-    borderBottom: "1px solid #ddd",
-    gap: 12,
-  },
-  left: {
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-  },
-  right: {
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-  },
-  user: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    fontWeight: 600,
-  },
-  logoutBtn: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    border: "1px solid #ccc",
-    background: "white",
-    padding: "6px 10px",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-};

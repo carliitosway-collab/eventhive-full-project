@@ -19,10 +19,11 @@ import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 import favoritesService from "../services/favorites.service";
 import commentsService from "../services/comments.service";
 import eventsService from "../services/events.service";
+import PageLayout from "../layouts/PageLayout";
 
-function IconText({ icon: Icon, children, style }) {
+function IconText({ icon: Icon, children, className = "" }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...style }}>
+    <span className={`inline-flex items-center gap-2 ${className}`}>
       <Icon />
       {children}
     </span>
@@ -276,58 +277,59 @@ export default function EventDetailsPage() {
 
   if (isLoading) {
     return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
+      <PageLayout>
+        <Link to="/events" className="btn btn-ghost btn-sm mb-4">
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
 
-        <h1 style={styles.h1}>Event Details</h1>
+        <h1 className="text-4xl font-black mb-4">Event Details</h1>
 
-        <p style={styles.muted}>
+        <p className="opacity-75">
           <IconText icon={FiLoader}>Cargando…</IconText>
         </p>
-      </div>
+      </PageLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
+      <PageLayout>
+        <Link to="/events" className="btn btn-ghost btn-sm mb-4">
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
 
-        <h1 style={styles.h1}>Event Details</h1>
+        <h1 className="text-4xl font-black mb-4">Event Details</h1>
 
-        <p style={styles.error}>
+        <div className="alert alert-error">
           <IconText icon={FiAlertTriangle}>{error}</IconText>
-        </p>
-      </div>
+        </div>
+      </PageLayout>
     );
   }
 
   if (!event) {
     return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
+      <PageLayout>
+        <Link to="/events" className="btn btn-ghost btn-sm mb-4">
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
 
-        <h1 style={styles.h1}>Event Details</h1>
-        <p style={styles.muted}>No encontré el evento.</p>
-      </div>
+        <h1 className="text-4xl font-black mb-2">Event Details</h1>
+        <p className="opacity-75">No encontré el evento.</p>
+      </PageLayout>
     );
   }
 
   return (
-    <div style={styles.page}>
-      <Link to="/events" style={styles.backLink}>
+    <PageLayout>
+      <Link to="/events" className="btn btn-ghost btn-sm mb-4">
         <IconText icon={FiArrowLeft}>Volver</IconText>
       </Link>
 
-      <header style={{ marginBottom: 14 }}>
-        <h1 style={styles.h1}>{event.title}</h1>
-        <p style={styles.subtitle}>
+      <header className="mb-4">
+        <h1 className="text-4xl font-black">{event.title}</h1>
+
+        <p className="opacity-70 mt-2">
           {event.isPublic ? (
             <IconText icon={FiGlobe}>Evento público</IconText>
           ) : (
@@ -336,248 +338,194 @@ export default function EventDetailsPage() {
         </p>
       </header>
 
-      <section style={styles.card}>
-        <p style={styles.desc}>{event.description || "Sin descripción"}</p>
+      <section className="card bg-base-100 border rounded-2xl">
+        <div className="card-body">
+          <p className="opacity-85 leading-relaxed">
+            {event.description || "Sin descripción"}
+          </p>
 
-        <div style={styles.metaRow}>
-          <span style={styles.metaItem}>
-            <IconText icon={FiMapPin}>{event.location || "Sin ubicación"}</IconText>
-          </span>
-          <span style={styles.metaItem}>
-            <IconText icon={FiCalendar}>{dateText}</IconText>
-          </span>
-        </div>
+          <div className="flex flex-wrap gap-3 mt-4 text-sm opacity-85">
+            <span className="inline-flex items-center gap-2">
+              <FiMapPin />
+              {event.location || "Sin ubicación"}
+            </span>
 
-        {event.createdBy && (
-          <div style={{ marginTop: 12, opacity: 0.8 }}>
-            <span style={{ fontWeight: 700 }}>Creado por:</span>{" "}
-            {event.createdBy.name || event.createdBy.email || "—"}
+            <span className="inline-flex items-center gap-2">
+              <FiCalendar />
+              {dateText}
+            </span>
           </div>
-        )}
 
-        <div style={styles.actionsRow}>
-          <button
-            onClick={handleToggleAttend}
-            disabled={!hasToken || isAttendLoading}
-            style={{ ...styles.btn, opacity: !hasToken || isAttendLoading ? 0.6 : 1 }}
-          >
-            {isAttendLoading ? "Procesando…" : isAttending ? "Salir (Leave)" : "Inscribirme (Attend)"}
-          </button>
+          {event.createdBy && (
+            <div className="mt-3 opacity-80">
+              <span className="font-bold">Creado por:</span>{" "}
+              {event.createdBy.name || event.createdBy.email || "—"}
+            </div>
+          )}
 
-          <button
-            onClick={handleToggleFavorite}
-            disabled={!hasToken || isFavLoading}
-            style={{
-              ...styles.btn,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              opacity: !hasToken || isFavLoading ? 0.6 : 1,
-            }}
-            aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-            title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-          >
-            {isFavLoading ? (
-              "Guardando…"
-            ) : isFavorite ? (
-              <>
-                <AiFillHeart size={18} />
-                Favorito
-              </>
-            ) : (
-              <>
-                <AiOutlineHeart size={18} />
-                Favorito
-              </>
-            )}
-          </button>
-
-          <span style={{ opacity: 0.75 }}>
-            <IconText icon={FiUsers}>
-              Asistentes: <b>{event.attendees?.length || 0}</b>
-            </IconText>
-          </span>
-
-          {!hasToken && <span style={{ opacity: 0.7 }}>(haz login para interactuar)</span>}
-        </div>
-
-        {isOwner && (
-          <div style={styles.ownerActionsRow}>
-            <Link
-              to={`/events/edit/${eventId}`}
-              style={{
-                ...styles.btn,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
+          {/* Actions */}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleToggleAttend}
+              disabled={!hasToken || isAttendLoading}
+              className="btn btn-primary"
             >
-              <IconText icon={FiEdit2}>Editar</IconText>
-            </Link>
+              {isAttendLoading ? (
+                <IconText icon={FiLoader}>Procesando…</IconText>
+              ) : isAttending ? (
+                "Salir (Leave)"
+              ) : (
+                "Inscribirme (Attend)"
+              )}
+            </button>
 
             <button
               type="button"
-              onClick={handleDeleteEvent}
-              disabled={isOwnerActionLoading}
-              style={{ ...styles.deleteEventBtn, opacity: isOwnerActionLoading ? 0.6 : 1 }}
+              onClick={handleToggleFavorite}
+              disabled={!hasToken || isFavLoading}
+              className="btn btn-outline"
+              aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+              title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
             >
-              <IconText icon={FiTrash2}>{isOwnerActionLoading ? "Borrando…" : "Borrar"}</IconText>
+              {isFavLoading ? (
+                <IconText icon={FiLoader}>Guardando…</IconText>
+              ) : isFavorite ? (
+                <>
+                  <AiFillHeart size={18} />
+                  Favorito
+                </>
+              ) : (
+                <>
+                  <AiOutlineHeart size={18} />
+                  Favorito
+                </>
+              )}
             </button>
-          </div>
-        )}
 
-        {attendError && <p style={{ ...styles.error, marginTop: 10 }}>{attendError}</p>}
-        {favError && <p style={{ ...styles.error, marginTop: 10 }}>{favError}</p>}
-        {ownerError && <p style={{ ...styles.error, marginTop: 10 }}>{ownerError}</p>}
+            <span className="opacity-75 inline-flex items-center gap-2">
+              <FiUsers />
+              Asistentes: <b>{event.attendees?.length || 0}</b>
+            </span>
 
-        <div style={styles.commentsBox}>
-          <div style={styles.commentsHeader}>
-            <IconText icon={FiMessageCircle}>
-              Comentarios <b>({comments.length})</b>
-            </IconText>
+            {!hasToken && <span className="opacity-70">(haz login para interactuar)</span>}
           </div>
 
-          <form onSubmit={handleCreateComment} style={styles.commentForm}>
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder={hasToken ? "Escribe un comentario..." : "Haz login para comentar"}
-              disabled={!hasToken || isCommentLoading}
-              style={styles.textarea}
-              rows={3}
-            />
+          {isOwner && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Link to={`/events/edit/${eventId}`} className="btn btn-outline">
+                <IconText icon={FiEdit2}>Editar</IconText>
+              </Link>
 
-            <button
-              type="submit"
-              disabled={!hasToken || isCommentLoading}
-              style={{
-                ...styles.btn,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                opacity: !hasToken || isCommentLoading ? 0.6 : 1,
-              }}
-            >
-              <FiSend />
-              {isCommentLoading ? "Enviando…" : "Enviar"}
-            </button>
-          </form>
-
-          {commentError && <p style={{ ...styles.error, marginTop: 10 }}>{commentError}</p>}
-
-          {comments.length === 0 ? (
-            <p style={{ ...styles.muted, marginTop: 10 }}>Todavía no hay comentarios.</p>
-          ) : (
-            <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-              {comments.map((c) => {
-                const isMine = userIdFromToken && String(c?.author?._id) === String(userIdFromToken);
-                const when = c?.createdAt ? new Date(c.createdAt).toLocaleString() : "";
-
-                return (
-                  <div key={c._id} style={styles.commentCard}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                      <div style={{ opacity: 0.85 }}>
-                        <div style={{ fontWeight: 700, fontSize: 14 }}>
-                          {c?.author?.name || c?.author?.email || "Usuario"}
-                        </div>
-                        <div style={{ fontSize: 12, opacity: 0.7 }}>{when}</div>
-                      </div>
-
-                      {isMine && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteComment(c._id)}
-                          style={styles.deleteBtn}
-                          title="Borrar comentario"
-                          aria-label="Borrar comentario"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      )}
-                    </div>
-
-                    <p style={{ margin: "10px 0 0", opacity: 0.85, lineHeight: 1.45 }}>{c.text}</p>
-                  </div>
-                );
-              })}
+              <button
+                type="button"
+                onClick={handleDeleteEvent}
+                disabled={isOwnerActionLoading}
+                className="btn btn-error"
+              >
+                <IconText icon={FiTrash2}>
+                  {isOwnerActionLoading ? "Borrando…" : "Borrar"}
+                </IconText>
+              </button>
             </div>
           )}
+
+          {attendError && (
+            <div className="alert alert-error mt-4">
+              <IconText icon={FiAlertTriangle}>{attendError}</IconText>
+            </div>
+          )}
+
+          {favError && (
+            <div className="alert alert-error mt-4">
+              <IconText icon={FiAlertTriangle}>{favError}</IconText>
+            </div>
+          )}
+
+          {ownerError && (
+            <div className="alert alert-error mt-4">
+              <IconText icon={FiAlertTriangle}>{ownerError}</IconText>
+            </div>
+          )}
+
+          {/* Comments */}
+          <div className="mt-8 pt-6 border-t">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
+                <FiMessageCircle />
+                Comentarios <span className="opacity-75">({comments.length})</span>
+              </h2>
+            </div>
+
+            <form onSubmit={handleCreateComment} className="mt-4 grid gap-3">
+              <textarea
+                className="textarea textarea-bordered w-full"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={hasToken ? "Escribe un comentario..." : "Haz login para comentar"}
+                disabled={!hasToken || isCommentLoading}
+                rows={3}
+              />
+
+              <button
+                type="submit"
+                disabled={!hasToken || isCommentLoading}
+                className="btn btn-primary w-fit"
+              >
+                <IconText icon={FiSend}>
+                  {isCommentLoading ? "Enviando…" : "Enviar"}
+                </IconText>
+              </button>
+            </form>
+
+            {commentError && (
+              <div className="alert alert-error mt-4">
+                <IconText icon={FiAlertTriangle}>{commentError}</IconText>
+              </div>
+            )}
+
+            {comments.length === 0 ? (
+              <p className="opacity-75 mt-4">Todavía no hay comentarios.</p>
+            ) : (
+              <div className="mt-4 grid gap-3">
+                {comments.map((c) => {
+                  const isMine = userIdFromToken && String(c?.author?._id) === String(userIdFromToken);
+                  const when = c?.createdAt ? new Date(c.createdAt).toLocaleString() : "";
+
+                  return (
+                    <div key={c._id} className="card bg-base-100 border rounded-xl">
+                      <div className="card-body p-4">
+                        <div className="flex justify-between gap-4">
+                          <div className="opacity-85">
+                            <div className="font-bold text-sm">
+                              {c?.author?.name || c?.author?.email || "Usuario"}
+                            </div>
+                            <div className="text-xs opacity-70">{when}</div>
+                          </div>
+
+                          {isMine && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(c._id)}
+                              className="btn btn-ghost btn-sm"
+                              title="Borrar comentario"
+                              aria-label="Borrar comentario"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          )}
+                        </div>
+
+                        <p className="mt-3 opacity-85 leading-relaxed">{c.text}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </section>
-    </div>
+    </PageLayout>
   );
 }
-
-const styles = {
-  page: { padding: 20, maxWidth: 900, margin: "0 auto" },
-  backLink: { display: "inline-block", marginBottom: 12, textDecoration: "none", opacity: 0.8 },
-  h1: { margin: "0 0 6px", fontSize: 42 },
-  subtitle: { margin: 0, opacity: 0.7, fontSize: 16 },
-  muted: { opacity: 0.75 },
-  error: { color: "crimson" },
-  card: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-  desc: { margin: "0 0 12px", opacity: 0.85, lineHeight: 1.45 },
-  metaRow: { display: "flex", gap: 14, flexWrap: "wrap", opacity: 0.85, fontSize: 14 },
-  metaItem: { display: "inline-flex", alignItems: "center", gap: 6 },
-  actionsRow: { marginTop: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" },
-  ownerActionsRow: { marginTop: 12, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" },
-  btn: {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-    fontWeight: 600,
-  },
-  deleteEventBtn: {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(220, 0, 0, 0.25)",
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-    fontWeight: 700,
-    color: "crimson",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  commentsBox: { marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(0,0,0,0.08)" },
-  commentsHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
-  commentForm: { display: "grid", gap: 10, marginTop: 10 },
-  textarea: {
-    width: "100%",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    padding: 12,
-    resize: "vertical",
-    fontFamily: "inherit",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
-  },
-  commentCard: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 14,
-    padding: 12,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
-  },
-  deleteBtn: {
-    border: "1px solid rgba(0,0,0,0.12)",
-    borderRadius: 10,
-    padding: "6px 8px",
-    background: "white",
-    cursor: "pointer",
-    opacity: 0.9,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-};

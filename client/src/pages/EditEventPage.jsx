@@ -12,11 +12,13 @@ import {
   FiFileText,
   FiLock,
 } from "react-icons/fi";
-import eventsService from "../services/events.service";
 
-function IconText({ icon: Icon, children, style }) {
+import eventsService from "../services/events.service";
+import PageLayout from "../layouts/PageLayout";
+
+function IconText({ icon: Icon, children, className = "" }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...style }}>
+    <span className={`inline-flex items-center gap-2 ${className}`}>
       <Icon />
       {children}
     </span>
@@ -89,8 +91,7 @@ export default function EditEventPage() {
   const isOwner = useMemo(() => {
     if (!userIdFromToken || !event?.createdBy) return false;
 
-    const ownerId =
-      typeof event.createdBy === "string" ? event.createdBy : event.createdBy?._id;
+    const ownerId = typeof event.createdBy === "string" ? event.createdBy : event.createdBy?._id;
 
     return String(ownerId) === String(userIdFromToken);
   }, [event, userIdFromToken]);
@@ -181,254 +182,193 @@ export default function EditEventPage() {
   // LOADING
   if (isLoading) {
     return (
-      <div style={styles.page}>
-        <Link to="/my-events" style={styles.backLink}>
+      <PageLayout>
+        <Link to="/my-events" className="btn btn-ghost btn-sm mb-4">
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
 
-        <h1 style={styles.h1}>
+        <h1 className="text-4xl font-black mb-4">
           <IconText icon={FiEdit2}>Edit Event</IconText>
         </h1>
 
-        <p style={styles.muted}>
+        <p className="opacity-75">
           <IconText icon={FiLoader}>Cargando…</IconText>
         </p>
-      </div>
+      </PageLayout>
     );
   }
 
   // ERROR + no event
   if (!event) {
     return (
-      <div style={styles.page}>
-        <Link to="/my-events" style={styles.backLink}>
+      <PageLayout>
+        <Link to="/my-events" className="btn btn-ghost btn-sm mb-4">
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
 
-        <div style={styles.card}>
-          <h1 style={{ ...styles.h1, marginBottom: 10 }}>
-            <IconText icon={FiAlertTriangle}>No se pudo cargar</IconText>
-          </h1>
+        <div className="card bg-base-100 border rounded-2xl">
+          <div className="card-body">
+            <h1 className="text-3xl font-black mb-2">
+              <IconText icon={FiAlertTriangle}>No se pudo cargar</IconText>
+            </h1>
 
-          <p style={styles.error}>{error || "No encontré el evento."}</p>
+            <p className="text-error">{error || "No encontré el evento."}</p>
 
-          <button type="button" onClick={fetchEvent} style={styles.btn}>
-            Reintentar
-          </button>
+            <div className="card-actions mt-2">
+              <button type="button" onClick={fetchEvent} className="btn btn-outline">
+                Reintentar
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // NOT OWNER (guard rail visual)
   if (hasToken && !isOwner) {
     return (
-      <div style={styles.page}>
-        <Link to={`/events/${eventId}`} style={styles.backLink}>
+      <PageLayout>
+        <Link to={`/events/${eventId}`} className="btn btn-ghost btn-sm mb-4">
           <IconText icon={FiArrowLeft}>Volver</IconText>
         </Link>
 
-        <div style={styles.card}>
-          <h1 style={{ ...styles.h1, marginBottom: 10 }}>
-            <IconText icon={FiLock}>Sin permisos</IconText>
-          </h1>
+        <div className="card bg-base-100 border rounded-2xl">
+          <div className="card-body">
+            <h1 className="text-3xl font-black mb-2">
+              <IconText icon={FiLock}>Sin permisos</IconText>
+            </h1>
 
-          <p style={styles.muted}>Este evento no es tuyo, así que no puedes editarlo.</p>
+            <p className="opacity-80">
+              Este evento no es tuyo, así que no puedes editarlo.
+            </p>
 
-          <Link
-            to={`/events/${eventId}`}
-            style={{
-              ...styles.btn,
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <FiArrowLeft />
-            Volver al detalle
-          </Link>
+            <div className="card-actions mt-2">
+              <Link to={`/events/${eventId}`} className="btn btn-outline">
+                <IconText icon={FiArrowLeft}>Volver al detalle</IconText>
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
   // FORM
   return (
-    <div style={styles.page}>
-      <Link to={`/events/${eventId}`} style={styles.backLink}>
+    <PageLayout>
+      <Link to={`/events/${eventId}`} className="btn btn-ghost btn-sm mb-4">
         <IconText icon={FiArrowLeft}>Volver</IconText>
       </Link>
 
-      <header style={{ marginBottom: 14 }}>
-        <h1 style={styles.h1}>
+      <header className="mb-6">
+        <h1 className="text-4xl font-black">
           <IconText icon={FiEdit2}>Edit Event</IconText>
         </h1>
-        <p style={styles.subtitle}>Actualiza tu evento y guarda cambios</p>
+        <p className="opacity-70 mt-2">Actualiza tu evento y guarda cambios</p>
       </header>
 
-      <section style={styles.card}>
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>
-            <span style={styles.labelTitle}>
-              <IconText icon={FiType}>Title</IconText>
-            </span>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              style={styles.input}
-              placeholder="Ej: Ocean Meetup"
-              disabled={isSaving}
-              autoComplete="off"
-            />
-          </label>
-
-          <label style={styles.label}>
-            <span style={styles.labelTitle}>
-              <IconText icon={FiFileText}>Description</IconText>
-            </span>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              style={styles.textarea}
-              placeholder="Cuéntanos de qué va el evento"
-              rows={4}
-              disabled={isSaving}
-            />
-          </label>
-
-          <div style={styles.row2}>
-            <label style={styles.label}>
-              <span style={styles.labelTitle}>
-                <IconText icon={FiCalendar}>Date</IconText>
-              </span>
+      <section className="card bg-base-100 border rounded-2xl">
+        <div className="card-body">
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <label className="form-control">
+              <div className="label">
+                <span className="label-text font-extrabold">
+                  <IconText icon={FiType}>Title</IconText>
+                </span>
+              </div>
               <input
-                type="datetime-local"
-                value={dateLocal}
-                onChange={(e) => setDateLocal(e.target.value)}
-                style={styles.input}
-                disabled={isSaving}
-              />
-            </label>
-
-            <label style={styles.label}>
-              <span style={styles.labelTitle}>
-                <IconText icon={FiMapPin}>Location</IconText>
-              </span>
-              <input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                style={styles.input}
-                placeholder="Ej: Madrid"
+                className="input input-bordered w-full"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ej: Ocean Meetup"
                 disabled={isSaving}
                 autoComplete="off"
               />
             </label>
-          </div>
 
-          <label style={styles.publicBox}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <div>
-                <div style={{ fontWeight: 800 }}>Public event</div>
-                <div style={{ opacity: 0.75, fontSize: 14 }}>
-                  {isPublic ? "Visible para todos" : "Solo tú lo ves"}
-                </div>
+            <label className="form-control">
+              <div className="label">
+                <span className="label-text font-extrabold">
+                  <IconText icon={FiFileText}>Description</IconText>
+                </span>
               </div>
-
-              <input
-                type="checkbox"
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
-                style={{ transform: "scale(1.2)" }}
+              <textarea
+                className="textarea textarea-bordered w-full"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Cuéntanos de qué va el evento"
+                rows={4}
                 disabled={isSaving}
               />
+            </label>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="form-control">
+                <div className="label">
+                  <span className="label-text font-extrabold">
+                    <IconText icon={FiCalendar}>Date</IconText>
+                  </span>
+                </div>
+                <input
+                  type="datetime-local"
+                  className="input input-bordered w-full"
+                  value={dateLocal}
+                  onChange={(e) => setDateLocal(e.target.value)}
+                  disabled={isSaving}
+                />
+              </label>
+
+              <label className="form-control">
+                <div className="label">
+                  <span className="label-text font-extrabold">
+                    <IconText icon={FiMapPin}>Location</IconText>
+                  </span>
+                </div>
+                <input
+                  className="input input-bordered w-full"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Ej: Madrid"
+                  disabled={isSaving}
+                  autoComplete="off"
+                />
+              </label>
             </div>
-          </label>
 
-          {error && (
-            <p style={styles.error}>
-              <IconText icon={FiAlertTriangle}>{error}</IconText>
-            </p>
-          )}
+            <label className="p-4 border rounded-xl bg-base-200/40">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="font-extrabold">Public event</div>
+                  <div className="opacity-75 text-sm">
+                    {isPublic ? "Visible para todos" : "Solo tú lo ves"}
+                  </div>
+                </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            style={{
-              ...styles.btn,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              opacity: isSaving ? 0.65 : 1,
-            }}
-          >
-            <FiSave />
-            {isSaving ? "Guardando…" : "Save changes"}
-          </button>
-        </form>
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                  disabled={isSaving}
+                />
+              </div>
+            </label>
+
+            {error && (
+              <div className="alert alert-error">
+                <IconText icon={FiAlertTriangle}>{error}</IconText>
+              </div>
+            )}
+
+            <button type="submit" disabled={isSaving} className="btn btn-primary w-fit">
+              <IconText icon={FiSave}>
+                {isSaving ? "Guardando…" : "Save changes"}
+              </IconText>
+            </button>
+          </form>
+        </div>
       </section>
-    </div>
+    </PageLayout>
   );
 }
-
-const styles = {
-  page: { padding: 20, maxWidth: 900, margin: "0 auto" },
-  backLink: { display: "inline-block", marginBottom: 12, textDecoration: "none", opacity: 0.8 },
-  h1: { margin: "0 0 6px", fontSize: 42 },
-  subtitle: { margin: 0, opacity: 0.7, fontSize: 16 },
-  muted: { opacity: 0.75 },
-  error: { color: "crimson", marginTop: 10 },
-
-  card: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-
-  form: { display: "grid", gap: 12 },
-  row2: { display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" },
-
-  label: { display: "grid", gap: 8 },
-  labelTitle: { fontWeight: 800 },
-
-  input: {
-    width: "100%",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    padding: "12px 12px",
-    fontFamily: "inherit",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
-  },
-
-  textarea: {
-    width: "100%",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    padding: 12,
-    resize: "vertical",
-    fontFamily: "inherit",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
-  },
-
-  publicBox: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 14,
-    padding: 14,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.04)",
-  },
-
-  btn: {
-    marginTop: 6,
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-    fontWeight: 700,
-    width: "fit-content",
-  },
-};

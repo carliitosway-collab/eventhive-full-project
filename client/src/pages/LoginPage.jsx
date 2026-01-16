@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/auth.context";
 import authService from "../services/auth.service";
+import PageLayout from "../layouts/PageLayout";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,7 +30,6 @@ export default function LoginPage() {
     authService
       .login({ email: cleanEmail, password: cleanPassword })
       .then((response) => {
-        // ✅ soporta varias formas de respuesta del backend
         const token =
           response?.data?.authToken ||
           response?.data?.token ||
@@ -41,60 +41,78 @@ export default function LoginPage() {
         }
 
         storeToken(token);
-
-        // ✅ fuerza a que el contexto se actualice antes de navegar
         return authenticateUser();
       })
       .then(() => {
-        navigate("/"); // o "/events" si prefieres
+        navigate("/");
       })
       .catch((error) => {
         console.log(error);
-        const msg =
-          error?.response?.data?.message ||
-          error?.message ||
-          "Login failed";
+        const msg = error?.response?.data?.message || error?.message || "Login failed";
         setErrorMessage(msg);
       })
       .finally(() => setIsSubmitting(false));
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 520, margin: "0 auto" }}>
-      <h1 style={{ marginBottom: 10 }}>Login</h1>
+    <PageLayout>
+      <div className="max-w-md mx-auto">
+        <h1 className="text-4xl font-black mb-2">Login</h1>
+        <p className="opacity-70 mb-6">Entra para crear eventos, apuntarte y guardar favoritos.</p>
 
-      <form
-        onSubmit={handleLoginSubmit}
-        style={{ display: "grid", gap: 10, maxWidth: 360 }}
-      >
-        <label>Email</label>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          type="email"
-          autoComplete="email"
-          disabled={isSubmitting}
-        />
+        <div className="card bg-base-100 border rounded-2xl">
+          <div className="card-body">
+            <form onSubmit={handleLoginSubmit} className="grid gap-4">
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text font-semibold">Email</span>
+                </div>
+                <input
+                  className="input input-bordered w-full"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  autoComplete="email"
+                  disabled={isSubmitting}
+                  required
+                />
+              </label>
 
-        <label>Password</label>
-        <input
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          autoComplete="current-password"
-          disabled={isSubmitting}
-        />
+              <label className="form-control w-full">
+                <div className="label">
+                  <span className="label-text font-semibold">Password</span>
+                </div>
+                <input
+                  className="input input-bordered w-full"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                  autoComplete="current-password"
+                  disabled={isSubmitting}
+                  required
+                />
+              </label>
 
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Entrando..." : "Login"}
-        </button>
-      </form>
+              {errorMessage && (
+                <div className="alert alert-error">
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
-      {errorMessage && <p style={{ color: "crimson", marginTop: 12 }}>{errorMessage}</p>}
+              <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Entrando..." : "Login"}
+              </button>
 
-      <p style={{ marginTop: 12 }}>
-        No account yet? <Link to="/signup">Sign up</Link>
-      </p>
-    </div>
+              <p className="text-sm opacity-80">
+                No account yet?{" "}
+                <Link className="link link-hover font-semibold" to="/signup">
+                  Sign up
+                </Link>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </PageLayout>
   );
 }

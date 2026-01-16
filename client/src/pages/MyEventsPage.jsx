@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiEdit2, FiTrash2, FiLoader, FiAlertTriangle } from "react-icons/fi";
+
 import eventsService from "../services/events.service";
 import { getNiceHttpError } from "../utils/httpErrors";
+import PageLayout from "../layouts/PageLayout";
 
-function IconText({ icon: Icon, children, style }) {
+function IconText({ icon: Icon, children, className = "" }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...style }}>
+    <span className={`inline-flex items-center gap-2 ${className}`}>
       <Icon />
       {children}
     </span>
@@ -72,62 +74,52 @@ export default function MyEventsPage() {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
-          <IconText icon={FiArrowLeft}>Volver</IconText>
-        </Link>
-
-        <h1 style={styles.h1}>My Events</h1>
-
-        <p style={styles.muted}>
-          <IconText icon={FiLoader}>Cargando…</IconText>
-        </p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={styles.page}>
-        <Link to="/events" style={styles.backLink}>
-          <IconText icon={FiArrowLeft}>Volver</IconText>
-        </Link>
-
-        <h1 style={styles.h1}>My Events</h1>
-
-        <p style={styles.error}>
-          <IconText icon={FiAlertTriangle}>{error}</IconText>
-        </p>
-
-        <button type="button" onClick={fetchMyEvents} style={styles.btn}>
-          Reintentar
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div style={styles.page}>
-      <Link to="/events" style={styles.backLink}>
+    <PageLayout>
+      <Link to="/events" className="link link-hover inline-flex items-center gap-2 opacity-80">
         <IconText icon={FiArrowLeft}>Volver</IconText>
       </Link>
 
-      <header style={{ marginBottom: 14 }}>
-        <h1 style={styles.h1}>My Events</h1>
-        <p style={styles.subtitle}>{events.length} eventos creados</p>
+      <header className="mt-3 mb-6">
+        <h1 className="text-4xl md:text-5xl font-black">My Events</h1>
+
+        {!isLoading && !error && (
+          <p className="opacity-70 mt-2">{events.length} eventos creados</p>
+        )}
       </header>
 
-      {events.length === 0 ? (
-        <div style={styles.card}>
-          <p style={styles.muted}>No has creado eventos todavía.</p>
-          <button type="button" style={styles.btn} onClick={() => navigate("/events/new")}>
-            Crear evento
+      {isLoading ? (
+        <p className="opacity-75">
+          <IconText icon={FiLoader}>Cargando…</IconText>
+        </p>
+      ) : error ? (
+        <div className="space-y-3">
+          <div className="alert alert-error">
+            <IconText icon={FiAlertTriangle}>{error}</IconText>
+          </div>
+
+          <button type="button" onClick={fetchMyEvents} className="btn btn-outline btn-sm">
+            Reintentar
           </button>
         </div>
+      ) : events.length === 0 ? (
+        <div className="card bg-base-100 border rounded-2xl">
+          <div className="card-body">
+            <p className="opacity-75">No has creado eventos todavía.</p>
+
+            <div className="card-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => navigate("/events/new")}
+              >
+                Crear evento
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
-        <div style={styles.grid}>
+        <div className="grid gap-4">
           {events.map((ev) => {
             const isOwner =
               userIdFromToken &&
@@ -135,100 +127,42 @@ export default function MyEventsPage() {
                 String(ev?.createdBy) === String(userIdFromToken));
 
             return (
-              <div key={ev._id} style={styles.rowCard}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <div>
-                    <h3 style={{ margin: 0 }}>{ev.title}</h3>
-                    <p style={{ margin: "6px 0 0", opacity: 0.75, fontSize: 14 }}>
-                      {ev.location || "Sin ubicación"}
-                    </p>
-                  </div>
-
-                  {isOwner && (
-                    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                      <Link to={`/events/${ev._id}`} style={{ textDecoration: "none", opacity: 0.85 }}>
-                        Ver
-                      </Link>
-
-                      <Link to={`/events/edit/${ev._id}`} style={styles.actionLink}>
-                        <IconText icon={FiEdit2}>Editar</IconText>
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(ev._id)}
-                        style={styles.deleteBtn}
-                      >
-                        <IconText icon={FiTrash2}>Borrar</IconText>
-                      </button>
+              <div key={ev._id} className="card bg-base-100 border rounded-2xl">
+                <div className="card-body">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                      <h3 className="text-lg font-bold m-0">{ev.title}</h3>
+                      <p className="mt-1 opacity-70 text-sm">
+                        {ev.location || "Sin ubicación"}
+                      </p>
                     </div>
-                  )}
+
+                    {isOwner && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Link to={`/events/${ev._id}`} className="link link-hover font-semibold">
+                          Ver
+                        </Link>
+
+                        <Link to={`/events/edit/${ev._id}`} className="btn btn-outline btn-sm">
+                          <IconText icon={FiEdit2}>Editar</IconText>
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(ev._id)}
+                          className="btn btn-outline btn-sm btn-error"
+                        >
+                          <IconText icon={FiTrash2}>Borrar</IconText>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }
-
-const styles = {
-  page: { padding: 20, maxWidth: 900, margin: "0 auto" },
-  backLink: { display: "inline-block", marginBottom: 12, textDecoration: "none", opacity: 0.8 },
-  h1: { margin: "0 0 6px", fontSize: 42 },
-  subtitle: { margin: 0, opacity: 0.7, fontSize: 16 },
-  muted: { opacity: 0.75 },
-  error: { color: "crimson", marginBottom: 12 },
-
-  grid: { display: "grid", gap: 12 },
-
-  card: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-
-  rowCard: {
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    background: "white",
-    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-  },
-
-  btn: {
-    marginTop: 10,
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.06)",
-    fontWeight: 600,
-  },
-
-  actionLink: {
-    textDecoration: "none",
-    border: "1px solid rgba(0,0,0,0.15)",
-    padding: "8px 10px",
-    borderRadius: 12,
-    background: "white",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
-    fontWeight: 600,
-    color: "inherit",
-  },
-
-  deleteBtn: {
-    border: "1px solid rgba(220, 0, 0, 0.25)",
-    padding: "8px 10px",
-    borderRadius: 12,
-    background: "white",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
-    fontWeight: 700,
-    color: "crimson",
-  },
-};

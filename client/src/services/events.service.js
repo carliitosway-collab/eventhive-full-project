@@ -1,35 +1,25 @@
 import api from "./api.service";
 
 const eventsService = {
-  // ✅ Público
-  getPublicEvents: (params = {}) =>
-    api.get("/events", { params, requiresAuth: false }),
+  // Público
+  getPublicEvents: (params = {}) => api.get("/events", { params }),
 
-  // ✅ Detalle (asumimos público; si tu backend lo protege para privados, ya lo veremos luego)
-  getEventDetails: (eventId) =>
-    api.get(`/events/${eventId}`, { requiresAuth: false }),
+  getEventDetails: (eventId) => api.get(`/events/${eventId}`),
 
-  // 🔒 Privados
-  createEvent: (payload) =>
-    api.post("/events", payload, { requiresAuth: true }),
+  // Privados (requieren token -> interceptor lo añade)
+  createEvent: (payload) => api.post("/events", payload),
 
-  updateEvent: (eventId, payload) =>
-    api.put(`/events/${eventId}`, payload, { requiresAuth: true }),
+  updateEvent: (eventId, payload) => api.put(`/events/${eventId}`, payload),
 
-  deleteEvent: (eventId) =>
-    api.delete(`/events/${eventId}`, { requiresAuth: true }),
+  deleteEvent: (eventId) => api.delete(`/events/${eventId}`),
 
-  joinEvent: (eventId) =>
-    api.post(`/events/${eventId}/join`, null, { requiresAuth: true }),
+  joinEvent: (eventId) => api.post(`/events/${eventId}/join`, null),
 
-  leaveEvent: (eventId) =>
-    api.delete(`/events/${eventId}/join`, { requiresAuth: true }),
+  leaveEvent: (eventId) => api.delete(`/events/${eventId}/join`),
 
-  getMyEvents: () =>
-    api.get("/events", { params: { mine: true }, requiresAuth: true }),
+  getMyEvents: () => api.get("/events", { params: { mine: true } }),
 
-  getAttendingEvents: () =>
-    api.get("/events", { params: { attending: true }, requiresAuth: true }),
+  getAttendingEvents: () => api.get("/events", { params: { attending: true } }),
 };
 
 export default eventsService;

@@ -15,6 +15,7 @@ function AuthProviderWrapper({ children }) {
     setIsLoading(true);
 
     const storedToken = localStorage.getItem("authToken");
+
     if (!storedToken) {
       setIsLoggedIn(false);
       setUser(null);
@@ -25,12 +26,11 @@ function AuthProviderWrapper({ children }) {
     return authService
       .verify()
       .then((response) => {
-        // Tu backend devuelve req.payload en response.data
+        // backend devuelve req.payload en response.data
         setIsLoggedIn(true);
         setUser(response.data);
       })
       .catch((err) => {
-        // ✅ si token inválido/expirado -> limpiar TODO
         console.log("verify failed:", err?.response?.status);
         removeToken();
         setIsLoggedIn(false);
@@ -43,6 +43,7 @@ function AuthProviderWrapper({ children }) {
     removeToken();
     setIsLoggedIn(false);
     setUser(null);
+    setIsLoading(false);
   };
 
   useEffect(() => {

@@ -319,51 +319,126 @@ export default function EventsListPage() {
             </div>
           )}
 
-          {/* Collapsible filters */}
-          {isFiltersOpen && (
-            <div className="card bg-base-100 border border-base-300 rounded-2xl">
-              <div className="card-body p-4 md:p-5">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <label className="form-control">
-                    <div className="label">
-                      <span className="label-text font-bold">
-                        <IconText icon={FiCalendar}>{t?.from || "From"}</IconText>
-                      </span>
-                    </div>
-                    <input
-                      type="date"
-                      className="input input-bordered rounded-2xl"
-                      value={from}
-                      onChange={(e) => setFrom(e.target.value)}
-                    />
-                  </label>
 
-                  <label className="form-control">
-                    <div className="label">
-                      <span className="label-text font-bold">
-                        <IconText icon={FiCalendar}>{t?.to || "To"}</IconText>
-                      </span>
-                    </div>
-                    <input
-                      type="date"
-                      className="input input-bordered rounded-2xl"
-                      value={to}
-                      onChange={(e) => setTo(e.target.value)}
-                      min={from || undefined}
-                    />
-                  </label>
 
-                  <div className="flex items-end gap-2">
-                    <button type="submit" className="btn btn-primary rounded-2xl w-full">
-                      {t?.apply || "Apply"}
-                    </button>
-                  </div>
-                </div>
 
-                <p className="text-sm opacity-60 mt-3">{t?.tip || ""}</p>
-              </div>
-            </div>
-          )}
+
+
+
+
+
+{/* Collapsible filters */}
+{isFiltersOpen && (
+  <div className="card bg-base-100 border border-base-300 rounded-2xl">
+    <div className="card-body p-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+  {/* FROM */} 
+
+  <label className="form-control w-full">
+    <div className="flex items-center gap-3">
+      <span className="font-bold flex items-center gap-2">
+        <FiCalendar />
+        {t?.from || "From"}
+      </span>
+    </div>
+
+    <input
+      type="date"
+      value={from}
+      onChange={(e) => setFrom(e.target.value)}
+      className="
+        input input-bordered
+        rounded-full
+        h-9 min-h-9
+        px-4
+        bg-base-100
+        shadow-sm
+        border border-base-300
+        focus:outline-none
+        focus:border-primary/60
+        focus:shadow-md
+        w-fit
+        min-w-[160px]
+        max-w-[180px]
+      "
+    />
+  </label>
+
+
+  {/* TO */}
+  <label className="form-control w-full">
+    <div className="flex items-center gap-3 md:justify-start">
+      <span className="font-bold flex items-center gap-2">
+        <FiCalendar />
+        {t?.to || "To"}
+      </span>
+    </div>
+
+    <input
+      type="date"
+      value={to}
+      onChange={(e) => setTo(e.target.value)}
+      min={from || undefined}
+      className="
+        input input-bordered
+        rounded-full
+        h-9 min-h-9
+        px-4
+        bg-base-100
+        shadow-sm
+        border border-base-300
+        focus:outline-none
+        focus:border-primary/60
+        focus:shadow-md
+        w-fit
+        min-w-[160px]
+        max-w-[180px]
+      "
+    />
+  </label>
+
+  {/* APPLY */}
+  <div className="flex items-center md:justify-end justify-center">
+    <button
+      type="submit"
+      className="
+        btn
+        rounded-full
+        h-9 min-h-9
+        px-6
+        text-sm font-semibold
+        bg-primary text-primary-content
+        border border-primary/70
+        shadow-sm
+        hover:shadow-md hover:brightness-95
+        active:scale-95
+        transition
+        w-fit
+      "
+    >
+      {t?.apply || "Apply"}
+    </button>
+  </div>
+
+  {/* TIP */}
+  <p className="text-sm opacity-60 leading-snug md:col-span-3">
+    {t?.tip || "Tip: search first, then narrow by dates."}
+  </p>
+</div>
+
+    </div>
+  </div>
+)}
+
+
+
+
+
+
+
+
+
+
         </form>
       </header>
 

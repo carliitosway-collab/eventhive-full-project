@@ -42,7 +42,12 @@ export default function EventsListPage() {
   const LIMIT = 12;
 
   const [events, setEvents] = useState([]);
-  const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0, limit: LIMIT });
+  const [meta, setMeta] = useState({
+    page: 1,
+    pages: 1,
+    total: 0,
+    limit: LIMIT,
+  });
   const [page, setPage] = useState(1);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -178,7 +183,8 @@ export default function EventsListPage() {
     fetchPage(1, "replace", nextApplied);
   };
 
-  const chipClass = "badge badge-outline border-base-300 gap-2 py-3 px-3 rounded-2xl";
+  const chipClass =
+    "badge badge-outline border-base-300 gap-2 py-3 px-3 rounded-2xl";
 
   return (
     <PageLayout>
@@ -186,25 +192,21 @@ export default function EventsListPage() {
       <header className="mb-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black">{t?.eventsTitle || "Events"}</h1>
+            <h1 className="text-4xl md:text-5xl font-black">
+              {t?.eventsTitle || "Events"}
+            </h1>
             <p className="opacity-70 mt-2">{t?.eventsSubtitle || ""}</p>
           </div>
-
           <div className="flex items-center gap-2">
-
             <button
               type="button"
               className="btn btn-ghost btn-sm rounded-full gap-2 bg-base-100/70 border border-base-300 shadow-sm backdrop-blur opacity-80 hover:opacity-100 hover:bg-base-100"
-
               onClick={handleRefresh}
               disabled={isLoading || isLoadingMore}
             >
               <FiRefreshCcw />
               {t?.refresh || "Refresh"}
             </button>
-
-
-
           </div>
         </div>
 
@@ -215,7 +217,6 @@ export default function EventsListPage() {
               {/* OPTION A: Join input + button into one block */}
               <div className="join w-full">
                 <label className="input input-bordered border-r-0 join-item flex items-center gap-3 w-full h-9 px-4 rounded-l-2xl rounded-r-none">
-
                   <FiSearch className="opacity-70" />
                   <input
                     type="text"
@@ -233,7 +234,6 @@ export default function EventsListPage() {
                     >
                       {t?.search || "Search"}
                     </button>
-
                   )}
                 </label>
 
@@ -245,8 +245,6 @@ export default function EventsListPage() {
                 >
                   {t?.search || "Search"}
                 </button>
-
-
               </div>
             </div>
 
@@ -269,22 +267,18 @@ export default function EventsListPage() {
                   <IconText icon={FiX}>{t?.clear || "Clear"}</IconText>
                 </button>
               )}
-
               <div className="flex items-center gap-2">
-                <span className="text-sm opacity-70 hidden sm:inline">{t?.sort || "Sort"}</span>
-
+                <span className="text-sm opacity-70 hidden sm:inline">
+                  {t?.sort || "Sort"}
+                </span>
                 <select
                   className="select select-bordered rounded-full h-9 px-4 pr-8 text-sm font-medium"
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
                 >
-
-
                   <option value="date">{t?.dateAsc || "Soonest"}</option>
                   <option value="-date">{t?.dateDesc || "Latest"}</option>
                 </select>
-
-
               </div>
             </div>
           </div>
@@ -295,7 +289,9 @@ export default function EventsListPage() {
               {applied.q?.trim() && (
                 <span className={chipClass}>
                   <FiSearch />
-                  <span className="max-w-[240px] truncate">{applied.q.trim()}</span>
+                  <span className="max-w-[240px] truncate">
+                    {applied.q.trim()}
+                  </span>
                 </span>
               )}
               {applied.from && (
@@ -319,34 +315,26 @@ export default function EventsListPage() {
             </div>
           )}
 
+          {/* Collapsible filters */}
+          {isFiltersOpen && (
+            <div className="card bg-base-100 border border-base-300 rounded-2xl">
+              <div className="card-body p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                  {/* FROM */}
 
+                  <label className="form-control w-full">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold flex items-center gap-2">
+                        <FiCalendar />
+                        {t?.from || "From"}
+                      </span>
+                    </div>
 
-
-
-
-
-
-
-{/* Collapsible filters */}
-{isFiltersOpen && (
-  <div className="card bg-base-100 border border-base-300 rounded-2xl">
-    <div className="card-body p-4">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-  {/* FROM */} 
-
-  <label className="form-control w-full">
-    <div className="flex items-center gap-3">
-      <span className="font-bold flex items-center gap-2">
-        <FiCalendar />
-        {t?.from || "From"}
-      </span>
-    </div>
-
-    <input
-      type="date"
-      value={from}
-      onChange={(e) => setFrom(e.target.value)}
-      className="
+                    <input
+                      type="date"
+                      value={from}
+                      onChange={(e) => setFrom(e.target.value)}
+                      className="
         input input-bordered
         rounded-full
         h-9 min-h-9
@@ -361,84 +349,70 @@ export default function EventsListPage() {
         min-w-[160px]
         max-w-[180px]
       "
-    />
-  </label>
+                    />
+                  </label>
+                  {/* TO */}
+                  <label className="form-control w-full">
+                    <div className="flex items-center gap-3 md:justify-start">
+                      <span className="font-bold flex items-center gap-2">
+                        <FiCalendar />
+                        {t?.to || "To"}
+                      </span>
+                    </div>
 
-
-  {/* TO */}
-  <label className="form-control w-full">
-    <div className="flex items-center gap-3 md:justify-start">
-      <span className="font-bold flex items-center gap-2">
-        <FiCalendar />
-        {t?.to || "To"}
-      </span>
-    </div>
-
-    <input
-      type="date"
-      value={to}
-      onChange={(e) => setTo(e.target.value)}
-      min={from || undefined}
-      className="
-        input input-bordered
-        rounded-full
-        h-9 min-h-9
-        px-4
-        bg-base-100
-        shadow-sm
-        border border-base-300
-        focus:outline-none
-        focus:border-primary/60
-        focus:shadow-md
-        w-fit
-        min-w-[160px]
-        max-w-[180px]
+                    <input
+                      type="date"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                      min={from || undefined}
+                      className="
+   input input-bordered
+   rounded-full
+   h-9 min-h-9
+     px-4
+    bg-base-100
+     shadow-sm
+    border border-base-300
+    focus:outline-none
+    focus:border-primary/60
+  focus:shadow-md
+   w-fit
+  min-w-[160px]
+   max-w-[180px]
       "
-    />
-  </label>
+                    />
+                  </label>
+                  {/* APPLY */}
+                  <div className="flex items-center md:justify-end justify-center">
+                    <button
+                      type="submit"
+                      className="
+   btn
+   rounded-full
+    h-9 min-h-9
+    px-6
+   text-sm font-semibold
+    bg-primary text-primary-content
+    border border-primary/70
+    shadow-sm
+    hover:shadow-md hover:brightness-95
+    active:scale-95
+    transition
+     w-fit
+     "
+                    >
+                      {t?.apply || "Apply"}
+                    </button>
+                  </div>
 
-  {/* APPLY */}
-  <div className="flex items-center md:justify-end justify-center">
-    <button
-      type="submit"
-      className="
-        btn
-        rounded-full
-        h-9 min-h-9
-        px-6
-        text-sm font-semibold
-        bg-primary text-primary-content
-        border border-primary/70
-        shadow-sm
-        hover:shadow-md hover:brightness-95
-        active:scale-95
-        transition
-        w-fit
-      "
-    >
-      {t?.apply || "Apply"}
-    </button>
-  </div>
-
-  {/* TIP */}
-  <p className="text-sm opacity-60 leading-snug md:col-span-3">
-    {t?.tip || "Tip: search first, then narrow by dates."}
-  </p>
-</div>
-
-    </div>
-  </div>
-)}
-
-
-
-
-
-
-
-
-
-
+                  {/* TIP */}
+                  <p className="text-sm opacity-60 leading-snug md:col-span-3">
+                    {t?.tip || "Tip: search first, then narrow by dates."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </header>
 
@@ -450,7 +424,11 @@ export default function EventsListPage() {
       ) : error ? (
         <div className="alert alert-error">
           <IconText icon={FiAlertTriangle}>{error}</IconText>
-          <button type="button" onClick={handleRefresh} className="btn btn-sm btn-outline">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="btn btn-sm btn-outline"
+          >
             {t?.retry || "Retry"}
           </button>
         </div>
@@ -465,7 +443,8 @@ export default function EventsListPage() {
           {/* Meta row */}
           <div className="flex flex-wrap items-center justify-between mb-4 text-sm opacity-70 gap-2">
             <span>
-              {t?.showing || "Showing"} {events.length} {t?.of || "of"} {meta.total}
+              {t?.showing || "Showing"} {events.length} {t?.of || "of"}{" "}
+              {meta.total}
             </span>
             <span>
               {t?.page || "Page"} {meta.page} {t?.of || "of"} {meta.pages}
@@ -493,10 +472,14 @@ export default function EventsListPage() {
                 ) : (
                   <FiChevronDown />
                 )}
-                {isLoadingMore ? (t?.loading || "Loading...") : (t?.loadMore || "Load more")}
+                {isLoadingMore
+                  ? t?.loading || "Loading..."
+                  : t?.loadMore || "Load more"}
               </button>
             ) : (
-              <p className="text-sm opacity-60">{t?.caughtUp || "You are all caught up."}</p>
+              <p className="text-sm opacity-60">
+                {t?.caughtUp || "You are all caught up."}
+              </p>
             )}
           </div>
         </>

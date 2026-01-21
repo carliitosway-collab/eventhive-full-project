@@ -178,7 +178,7 @@ export default function MyEventsPage() {
 
       {/* Header */}
       <header className="mt-4 mb-6">
-        <h1 className="text-4xl md:text-5xl font-black">My events</h1>
+        <h1 className="text-4xl md:text-5xl font-black">My PRUEBA events</h1>
         <p className="opacity-70 mt-2">
           Manage the events you’ve created — edit, view or delete them.
         </p>

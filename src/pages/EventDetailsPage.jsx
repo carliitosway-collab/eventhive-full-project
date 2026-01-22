@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FiArrowLeft,
   FiMapPin,
@@ -12,10 +12,11 @@ import {
   FiEdit2,
   FiAlertTriangle,
   FiX,
+  FiCornerUpLeft,
 } from "react-icons/fi";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FiCornerUpLeft } from "react-icons/fi";
+import { FiMoreHorizontal } from "react-icons/fi";
 
 import favoritesService from "../services/favorites.service";
 import commentsService from "../services/comments.service";
@@ -79,10 +80,34 @@ function buildMapEmbedUrlFromLocation(location) {
   return `https://www.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`;
 }
 
+function buildMapSearchUrlFromLocation(location) {
+  const query = String(location || "").trim();
+  if (!query) return "";
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
 export default function EventDetailsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // ✅ unificado: limpia /events/:eventId aunque venga con basura en la URL
+  function normalizeFrom(value) {
+    const from = typeof value === "string" ? value.trim() : "";
+    if (!from) return "";
+
+    if (from.startsWith("/events")) return from;
+    if (from === "/me") return "/me";
+    if (from === "/my-events") return "/my-events";
+    if (from === "/favorites") return "/favorites";
+    if (from === "/attending") return "/attending";
+
+    return "";
+  }
+
+  const backTo = useMemo(() => {
+    const incoming = normalizeFrom(location.state?.from);
+    return incoming || "/events";
+  }, [location.state]);
+
   const { id: cleanEventId, isValid } = useCleanObjectIdParam({
     paramName: "eventId",
     basePath: "/events",
@@ -96,6 +121,7 @@ export default function EventDetailsPage() {
   const [isCommentLoading, setIsCommentLoading] = useState(false);
   const [commentError, setCommentError] = useState("");
   const [togglingLikeId, setTogglingLikeId] = useState(null);
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
 
   const [replyTo, setReplyTo] = useState(null); // { id, name } | null
 
@@ -114,7 +140,6 @@ export default function EventDetailsPage() {
   const [isFavLoading, setIsFavLoading] = useState(false);
   const [favError, setFavError] = useState("");
 
-  // owner actions
   const [isOwnerActionLoading, setIsOwnerActionLoading] = useState(false);
   const [ownerError, setOwnerError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -125,13 +150,26 @@ export default function EventDetailsPage() {
   const commentInputRef = useRef(null);
 
   const PILL_STATIC =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-4 py-1.5 text-sm font-medium shadow-sm";
+    "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-4 py-1.5 text-sm font-medium shadow-sm";
   const PILL_BTN =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-4 py-1.5 text-sm font-medium shadow-sm transition hover:bg-base-200 hover:shadow-md active:scale-[0.98]";
+    "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]";
+  const PILL_BTN_SOFT =
+    "inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-base-200 transition active:scale-[0.98]";
   const PILL_BTN_DANGER =
-    "inline-flex items-center gap-2 rounded-full border border-error/30 bg-base-100 px-4 py-1.5 text-sm font-semibold text-error shadow-sm transition hover:bg-error/10 hover:shadow-md active:scale-[0.98]";
+    "inline-flex items-center gap-2 rounded-full border border-error/30 bg-base-100 px-4 py-1.5 text-sm font-semibold text-error shadow-sm transition hover:bg-error/10 active:scale-[0.98]";
+  const ICON_PILL =
+    "inline-flex items-center justify-center rounded-full h-8 w-8 border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]";
+  const ICON_PILL_DANGER =
+    "inline-flex items-center justify-center rounded-full h-8 w-8 border border-error/30 bg-base-100 text-error shadow-sm hover:bg-error/10 transition active:scale-[0.98]";
+  const MENU_BTN =
+    "inline-flex items-center justify-center h-8 w-8 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]";
 
-  // userId from JWT
+  const MENU_ITEM =
+    "flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-indigo-50 active:bg-indigo-100";
+
+  const MENU_ITEM_DANGER =
+    "flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-error hover:bg-error/10 active:bg-error/20";
+
   const userIdFromToken = useMemo(() => {
     if (!token) return null;
 
@@ -195,6 +233,7 @@ export default function EventDetailsPage() {
     setReplyTo({ id: comment._id, name });
     setCommentText(`@${name} `);
     setTimeout(() => commentInputRef.current?.focus(), 0);
+    setIsComposerOpen(true);
   };
 
   const cancelReply = () => {
@@ -377,6 +416,7 @@ export default function EventDetailsPage() {
         setCommentText("");
         setReplyTo(null);
         fetchComments();
+        setIsComposerOpen(false);
       })
       .catch((err) => {
         console.log(err);
@@ -437,9 +477,9 @@ export default function EventDetailsPage() {
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           <Link
-            to="/events"
+            to={backTo}
             className="btn btn-ghost btn-sm border border-base-300 gap-2"
           >
             <FiArrowLeft />
@@ -447,7 +487,7 @@ export default function EventDetailsPage() {
           </Link>
         </div>
 
-        <header className="mt-4 mb-6">
+        <header className="mt-3 mb-4">
           <h1 className="text-4xl font-black">Event Details</h1>
           <p className="opacity-70 mt-2">Loading event…</p>
         </header>
@@ -462,9 +502,9 @@ export default function EventDetailsPage() {
   if (error) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           <Link
-            to="/events"
+            to={backTo}
             className="btn btn-ghost btn-sm border border-base-300 gap-2"
           >
             <FiArrowLeft />
@@ -472,7 +512,7 @@ export default function EventDetailsPage() {
           </Link>
         </div>
 
-        <header className="mt-4 mb-6">
+        <header className="mt-3 mb-4">
           <h1 className="text-4xl font-black">Event Details</h1>
         </header>
 
@@ -486,9 +526,9 @@ export default function EventDetailsPage() {
   if (!event) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           <Link
-            to="/events"
+            to={backTo}
             className="btn btn-ghost btn-sm border border-base-300 gap-2"
           >
             <FiArrowLeft />
@@ -496,7 +536,7 @@ export default function EventDetailsPage() {
           </Link>
         </div>
 
-        <header className="mt-4 mb-2">
+        <header className="mt-3 mb-2">
           <h1 className="text-4xl font-black">Event Details</h1>
         </header>
 
@@ -505,445 +545,540 @@ export default function EventDetailsPage() {
     );
   }
 
+  const mapEmbedUrl = buildMapEmbedUrlFromLocation(event.location);
+  const mapSearchUrl = buildMapSearchUrlFromLocation(event.location);
+
   return (
     <PageLayout>
-      <div className="flex items-center justify-between gap-4">
-        <Link
-          to="/events"
-          className="btn btn-ghost btn-sm border border-base-300 gap-2"
-        >
-          <FiArrowLeft />
-          Back
-        </Link>
-      </div>
-
-      <header className="mt-4 mb-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-4xl md:text-5xl font-black break-words">
-              {event.title || "Untitled event"}
-            </h1>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span
-                className={`${PILL_STATIC}${
-                  event.isPublic
-                    ? "border-base-300"
-                    : "border-base-300 bg-base-200/70"
-                }`}
-              >
-                <IconText icon={event.isPublic ? FiGlobe : FiLock}>
-                  {event.isPublic ? "Public" : "Private"}
-                </IconText>
-              </span>
-
-              <span className={PILL_STATIC}>
-                <IconText icon={FiCalendar}>{dateText}</IconText>
-              </span>
-
-              <span className={PILL_STATIC}>
-                <IconText icon={FiMapPin}>
-                  {event.location || "No location"}
-                </IconText>
-              </span>
-
-              <button
-                type="button"
-                onClick={handleToggleAttend}
-                className={PILL_BTN}
-              >
-                Attend
-              </button>
-
-              <button
-                type="button"
-                onClick={handleToggleFavorite}
-                className={`${PILL_BTN}${isFavorite ? "bg-base-200 border-base-300" : "border-base-300 hover:bg-base-200"}`}
-              >
-                {isFavorite ? "Saved" : "Save"}
-              </button>
-            </div>
-
-            {attendError && (
-              <div className="alert alert-error mt-4">
-                <IconText icon={FiAlertTriangle}>{attendError}</IconText>
-              </div>
-            )}
-
-            {favError && (
-              <div className="alert alert-error mt-4">
-                <IconText icon={FiAlertTriangle}>{favError}</IconText>
-              </div>
-            )}
-          </div>
-
-          {event.createdBy && (
-            <div className="text-sm opacity-75">
-              <span className="font-semibold">Created by:</span>{" "}
-              {event.createdBy.name || event.createdBy.email || "—"}
-            </div>
-          )}
+      <div className="max-w-4xl mx-auto px-4 md:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link to={backTo} className={PILL_BTN}>
+            <FiArrowLeft className="opacity-80" />
+            Back
+          </Link>
         </div>
-      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <section className="lg:col-span-12">
-          <div className="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-            <div className="card-body gap-6">
-              <div className="grid gap-2">
-                <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
-                  <FiMessageCircle />
-                  About this event
-                </h2>
+        <header className="mt-3 mb-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-4xl md:text-[3.25rem] font-black break-words leading-[1.08] max-w-[22ch]">
+                {event.title || "Untitled event"}
+              </h1>
 
-                <p className="text-base opacity-80 leading-relaxed max-w-prose">
-                  {event.description || "No description."}
-                </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span
+                  className={`${PILL_STATIC} ${
+                    event.isPublic ? "" : "bg-indigo-50/60"
+                  }`}
+                >
+                  <IconText icon={event.isPublic ? FiGlobe : FiLock}>
+                    {event.isPublic ? "Public" : "Private"}
+                  </IconText>
+                </span>
+
+                <span className={PILL_STATIC}>
+                  <IconText icon={FiCalendar}>{dateText}</IconText>
+                </span>
+
+                <span className={PILL_STATIC}>
+                  <IconText icon={FiMapPin}>
+                    {event.location || "No location"}
+                  </IconText>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleToggleAttend}
+                  disabled={isAttendLoading}
+                  className={`${PILL_BTN} ${
+                    isAttending ? "bg-indigo-100 border-indigo-300" : ""
+                  }`}
+                >
+                  {isAttendLoading ? (
+                    <span className="loading loading-spinner loading-xs" />
+                  ) : (
+                    "Attend"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToggleFavorite}
+                  disabled={isFavLoading}
+                  className={`${PILL_BTN} ${
+                    isFavorite ? "bg-indigo-100 border-indigo-300" : ""
+                  }`}
+                >
+                  {isFavLoading ? (
+                    <span className="loading loading-spinner loading-xs" />
+                  ) : isFavorite ? (
+                    "Saved"
+                  ) : (
+                    "Save"
+                  )}
+                </button>
               </div>
 
-              {isOwner && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Link
-                    to={`/events/edit/${cleanEventId}`}
-                    className="btn rounded-full px-4 h-9 min-h-9 text-xs font-medium gap-2 bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:bg-base-200 transition active:scale-[0.97]"
-                  >
-                    <FiEdit2 />
-                    Edit
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={handleDeleteClick}
-                    disabled={isOwnerActionLoading}
-                    className="btn rounded-full px-4 h-9 min-h-9 text-xs font-semibold gap-2 bg-error/10 text-error border border-error/30 shadow-sm hover:shadow-md hover:bg-error/20 transition active:scale-[0.97]"
-                  >
-                    {isOwnerActionLoading ? (
-                      <>
-                        <span className="loading loading-spinner loading-sm" />
-                        Deleting…
-                      </>
-                    ) : (
-                      <>
-                        <FiTrash2 />
-                        Delete
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {ownerError && (
-                <div className="alert alert-error">
-                  <IconText icon={FiAlertTriangle}>{ownerError}</IconText>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {showDeleteModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-              <div className="w-full max-w-xl rounded-3xl bg-base-100 p-6 shadow-2xl">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h3 className="text-2xl font-extrabold">Delete event</h3>
-                    <p className="mt-1 text-sm opacity-70">
-                      This action cannot be undone.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={PILL_BTN}
-                    onClick={() => setShowDeleteModal(false)}
-                    disabled={isOwnerActionLoading}
-                    aria-label="Close"
-                  >
-                    <FiX />
-                  </button>
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-2 text-base">
-                  <span>Are you sure you want to delete</span>
-                  <span
-                    className={`${PILL_STATIC} bg-base-200 px-4 py-2 text-base`}
-                  >
-                    {event?.title || "this event"}
-                  </span>
-                  <span>?</span>
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    className={PILL_BTN}
-                    onClick={() => setShowDeleteModal(false)}
-                    disabled={isOwnerActionLoading}
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`${PILL_BTN_DANGER} bg-error/10`}
-                    onClick={confirmDelete}
-                    disabled={isOwnerActionLoading}
-                  >
-                    {isOwnerActionLoading ? (
-                      <>
-                        <span className="loading loading-spinner loading-sm" />
-                        Deleting…
-                      </>
-                    ) : (
-                      <>
-                        <FiTrash2 />
-                        Delete
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-            <div className="card-body gap-4">
-              <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
-                <FiMapPin />
-                Location
-              </h2>
-
-              <p className="text-sm opacity-80">
-                {event.location || "No location."}
-              </p>
-
-              {buildMapEmbedUrlFromLocation(event.location) ? (
-                <div className="overflow-hidden rounded-2xl border border-base-300">
-                  <iframe
-                    title="Google Map"
-                    src={buildMapEmbedUrlFromLocation(event.location)}
-                    className="w-full h-80"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </div>
-              ) : (
-                <p className="text-sm opacity-70">Map not available.</p>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-            <div className="card-body">
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
-                  <FiMessageCircle />
-                  Comments{" "}
-                  <span className="text-sm font-semibold opacity-60">
-                    ({comments.length})
-                  </span>
-                </h2>
-              </div>
-
-              {replyTo && (
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-base-300 bg-base-100 px-4 py-2 text-sm">
-                  <div className="opacity-80">
-                    Replying to{" "}
-                    <span className="font-semibold">{replyTo.name}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={cancelReply}
-                    className="btn btn-ghost btn-xs"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-
-              <form
-                onSubmit={handleCreateComment}
-                className="mt-4 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end"
-              >
-                <textarea
-                  ref={commentInputRef}
-                  className="w-full rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-sm placeholder:opacity-60 transition duration-200 focus:border-base-300 focus:outline-none focus:ring-0 focus:bg-base-100 hover:bg-base-200/30"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder={
-                    hasToken ? "Write a comment..." : "Log in to comment"
-                  }
-                  disabled={!hasToken || isCommentLoading}
-                  rows={3}
-                />
-
-                <div className="flex items-center justify-end gap-3 md:self-end">
-                  {!hasToken && (
-                    <span className="text-xs opacity-60 mr-auto md:hidden">
-                      Log in to comment.
-                    </span>
+              {(attendError || favError) && (
+                <div className="mt-3 grid gap-2">
+                  {attendError && (
+                    <div className="alert alert-error">
+                      <IconText icon={FiAlertTriangle}>{attendError}</IconText>
+                    </div>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={!hasToken || isCommentLoading}
-                    className="inline-flex items-center gap-2 rounded-full border border-base-300 px-5 py-2 text-sm font-medium shadow-sm hover:bg-base-200 hover:shadow-md transition active:scale-[0.97]"
-                  >
-                    {isCommentLoading ? (
-                      <span className="loading loading-spinner loading-sm" />
-                    ) : (
-                      <>
-                        <FiSend className="text-base" />
-                        <span className="text-sm font-medium">Send</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {!hasToken && (
-                  <span className="text-xs opacity-60 hidden md:block md:col-span-2">
-                    Log in to comment.
-                  </span>
-                )}
-              </form>
-
-              {commentError && (
-                <div className="alert alert-error mt-4">
-                  <IconText icon={FiAlertTriangle}>{commentError}</IconText>
+                  {favError && (
+                    <div className="alert alert-error">
+                      <IconText icon={FiAlertTriangle}>{favError}</IconText>
+                    </div>
+                  )}
                 </div>
               )}
+            </div>
 
-              <div className="mt-5">
-                {comments.length === 0 ? (
-                  <p className="opacity-75">No comments yet.</p>
+            {event.createdBy && (
+              <div className="text-sm opacity-75">
+                <span className="font-semibold">Created by:</span>{" "}
+                {event.createdBy.name || event.createdBy.email || "—"}
+              </div>
+            )}
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <section className="lg:col-span-12">
+            <div className="rounded-2xl px-1 py-2">
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
+                    <FiMessageCircle />
+                    About this event
+                  </h2>
+
+                  <p className="text-base opacity-80 leading-relaxed max-w-prose">
+                    {event.description || "No description."}
+                  </p>
+                  <div className="h-px bg-base-200 mt-4" />
+                </div>
+
+                {isOwner && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      to={`/events/edit/${cleanEventId}`}
+                      className={PILL_BTN_SOFT}
+                    >
+                      <FiEdit2 />
+                      Edit
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={handleDeleteClick}
+                      disabled={isOwnerActionLoading}
+                      className={`${PILL_BTN_DANGER} bg-error/10`}
+                    >
+                      {isOwnerActionLoading ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs" />
+                          Deleting…
+                        </>
+                      ) : (
+                        <>
+                          <FiTrash2 />
+                          Delete
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {ownerError && (
+                  <div className="alert alert-error">
+                    <IconText icon={FiAlertTriangle}>{ownerError}</IconText>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {showDeleteModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                <div className="w-full max-w-xl rounded-3xl bg-base-100 p-6 shadow-2xl">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h3 className="text-2xl font-extrabold">Delete event</h3>
+                      <p className="mt-1 text-sm opacity-70">
+                        This action cannot be undone.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={PILL_BTN_SOFT}
+                      onClick={() => setShowDeleteModal(false)}
+                      disabled={isOwnerActionLoading}
+                      aria-label="Close"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-2 text-base">
+                    <span>Are you sure you want to delete</span>
+                    <span className={`${PILL_STATIC} bg-base-200 px-4 py-2`}>
+                      {event?.title || "this event"}
+                    </span>
+                    <span>?</span>
+                  </div>
+
+                  <div className="mt-6 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className={PILL_BTN_SOFT}
+                      onClick={() => setShowDeleteModal(false)}
+                      disabled={isOwnerActionLoading}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${PILL_BTN_DANGER} bg-error/10`}
+                      onClick={confirmDelete}
+                      disabled={isOwnerActionLoading}
+                    >
+                      {isOwnerActionLoading ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs" />
+                          Deleting…
+                        </>
+                      ) : (
+                        <>
+                          <FiTrash2 />
+                          Delete
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 rounded-2xl px-1 py-2">
+              <div className="grid gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
+                    <FiMapPin />
+                    Location
+                  </h2>
+
+                  {mapSearchUrl && (
+                    <a
+                      href={mapSearchUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={PILL_BTN}
+                      title="Open in Google Maps"
+                    >
+                      Open in Google Maps
+                    </a>
+                  )}
+                </div>
+
+                <p className="text-sm opacity-80">
+                  {event.location || "No location."}
+                </p>
+
+                {mapEmbedUrl ? (
+                  <div className="overflow-hidden rounded-2xl border border-base-300">
+                    <iframe
+                      title="Google Map"
+                      src={mapEmbedUrl}
+                      className="w-full h-64"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
                 ) : (
-                  <div className="grid gap-3">
-                    {comments.map((c) => {
-                      const isMine =
-                        userIdFromToken &&
-                        String(c?.author?._id) === String(userIdFromToken);
+                  <p className="text-sm opacity-70">Map not available.</p>
+                )}
+              </div>
+            </div>
 
-                      const when = c?.createdAt ? timeAgo(c.createdAt) : "";
+            <div className="mt-6 rounded-2xl border border-indigo-200/70 bg-indigo-50/40 shadow-sm ring-1 ring-indigo-200/40 px-4 py-4 md:px-5">
+              <div className="grid gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
+                    <FiMessageCircle />
+                    Comments{" "}
+                    <span className="text-sm font-semibold opacity-60">
+                      ({comments.length})
+                    </span>
+                  </h2>
 
-                      const liked = isCommentLiked(c);
+                  <button
+                    type="button"
+                    className={ICON_PILL}
+                    onClick={() => {
+                      setIsComposerOpen((v) => !v);
+                      setTimeout(() => commentInputRef.current?.focus(), 0);
+                    }}
+                    aria-label="Add comment"
+                    title="Add comment"
+                  >
+                    <FiEdit2 size={16} />
+                  </button>
+                </div>
+                <div className="h-px bg-indigo-200/60 my-2" />
 
-                      return (
-                        <div
-                          key={c._id}
-                          className="border border-base-300 rounded-xl bg-base-100 px-4 py-3 shadow-sm hover:bg-base-200/30 transition"
+                {isComposerOpen && (
+                  <>
+                    {replyTo && (
+                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-2 text-sm">
+                        <div className="opacity-80">
+                          Replying to{" "}
+                          <span className="font-semibold">{replyTo.name}</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            cancelReply();
+                            setTimeout(
+                              () => commentInputRef.current?.focus(),
+                              0,
+                            );
+                          }}
+                          className={PILL_BTN_SOFT}
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                {(() => {
-                                  const authorName =
-                                    c?.author?.name ||
-                                    c?.author?.email ||
-                                    "User";
+                          Cancel
+                        </button>
+                      </div>
+                    )}
 
-                                  const authorId =
-                                    typeof c?.author === "string"
-                                      ? c.author
-                                      : c?.author?._id;
+                    <form
+                      onSubmit={handleCreateComment}
+                      className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end"
+                    >
+                      <textarea
+                        ref={commentInputRef}
+                        className="w-full rounded-2xl border border-base-300 bg-base-100 px-4 py-3 text-sm placeholder:opacity-60 transition duration-200 focus:border-base-300 focus:outline-none focus:ring-0 focus:bg-base-100 hover:bg-base-200/30 min-h-[84px]"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder={
+                          hasToken ? "Write a comment..." : "Log in to comment"
+                        }
+                        disabled={!hasToken || isCommentLoading}
+                        rows={2}
+                      />
 
-                                  return authorId ? (
-                                    <Link
-                                      to={`/users/${authorId}`}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="font-semibold text-sm truncate hover:underline text-left"
-                                      title="View user"
-                                    >
-                                      {authorName}
-                                    </Link>
-                                  ) : (
-                                    <div className="font-semibold text-sm truncate">
-                                      {authorName}
-                                    </div>
-                                  );
-                                })()}
+                      <div className="flex items-center justify-end gap-2 md:self-end">
+                        <button
+                          type="submit"
+                          disabled={!hasToken || isCommentLoading}
+                          className={PILL_BTN_SOFT}
+                        >
+                          {isCommentLoading ? (
+                            <span className="loading loading-spinner loading-xs" />
+                          ) : (
+                            <>
+                              <FiSend className="text-indigo-600" />
+                            </>
+                          )}
+                        </button>
+                      </div>
 
-                                {when && (
-                                  <div className="text-xs opacity-60">
-                                    {when}
+                      {!hasToken && (
+                        <span className="text-xs opacity-60 md:col-span-2">
+                          Log in to comment.
+                        </span>
+                      )}
+                    </form>
+
+                    <div className="mt-0. h-px bg-base-200/60" />
+
+                    {commentError && (
+                      <div className="alert alert-error">
+                        <IconText icon={FiAlertTriangle}>
+                          {commentError}
+                        </IconText>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="mt-3">
+                  {comments.length === 0 ? (
+                    <p className="opacity-75">No comments yet.</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {comments.map((c) => {
+                        const isMine =
+                          userIdFromToken &&
+                          String(c?.author?._id) === String(userIdFromToken);
+
+                        const when = c?.createdAt ? timeAgo(c.createdAt) : "";
+                        const liked = isCommentLiked(c);
+
+                        const authorName =
+                          c?.author?.name || c?.author?.email || "User";
+                        const initial =
+                          String(authorName).trim().charAt(0).toUpperCase() ||
+                          "U";
+
+                        const authorId =
+                          typeof c?.author === "string"
+                            ? c.author
+                            : c?.author?._id;
+
+                        return (
+                          <div
+                            key={c._id}
+                            className="group rounded-2xl px-3 py-3 border border-transparent hover:border-indigo-200/70 hover:bg-indigo-50/40 transition active:scale-[0.995]"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0 flex items-start gap-3">
+                                <div className="h-9 w-9 shrink-0 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm grid place-items-center font-extrabold text-sm">
+                                  {initial}
+                                </div>
+
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    {authorId ? (
+                                      <Link
+                                        to={`/users/${authorId}`}
+                                        state={{
+                                          from:
+                                            location.pathname + location.search,
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="font-semibold text-sm truncate hover:underline text-left"
+                                        title="View user"
+                                      >
+                                        {authorName}
+                                      </Link>
+                                    ) : (
+                                      <div className="font-semibold text-sm truncate">
+                                        {authorName}
+                                      </div>
+                                    )}
+
+                                    {when && (
+                                      <div className="text-xs opacity-60">
+                                        {when}
+                                      </div>
+                                    )}
                                   </div>
-                                )}
+
+                                  <p className="mt-1 text-sm leading-relaxed opacity-85">
+                                    {c.text}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="dropdown dropdown-end">
+                                <button
+                                  type="button"
+                                  tabIndex={0}
+                                  className={`${MENU_BTN} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition`}
+                                  aria-label="More actions"
+                                  title="More actions"
+                                >
+                                  <FiMoreHorizontal size={18} />
+                                </button>
+
+                                <ul
+                                  tabIndex={0}
+                                  className="dropdown-content z-[1] mt-2 w-26 rounded-2xl border border-indigo-200 bg-base-100 p-2 shadow-lg"
+                                >
+                                  <li>
+                                    <button
+                                      type="button"
+                                      onClick={() => openReply(c)}
+                                      className={MENU_ITEM}
+                                    >
+                                      <FiCornerUpLeft />
+                                      Reply
+                                    </button>
+                                  </li>
+
+                                  <li>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleCommentLike(c._id)
+                                      }
+                                      disabled={togglingLikeId === c._id}
+                                      className={`${MENU_ITEM} ${liked ? "text-red-500" : ""} ${
+                                        togglingLikeId === c._id
+                                          ? "opacity-70 cursor-not-allowed"
+                                          : ""
+                                      }`}
+                                    >
+                                      {liked ? (
+                                        <AiFillHeart />
+                                      ) : (
+                                        <AiOutlineHeart />
+                                      )}
+                                      {liked ? "Unlike" : "Like"}
+                                    </button>
+                                  </li>
+
+                                  <li>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(
+                                          `/comments/${c._id}?eventId=${cleanEventId}`,
+                                          {
+                                            state: {
+                                              comment: c,
+                                              from:
+                                                location.pathname +
+                                                location.search,
+                                            },
+                                          },
+                                        );
+                                      }}
+                                      className={MENU_ITEM}
+                                    >
+                                      <FiMessageCircle />
+                                      View
+                                    </button>
+                                  </li>
+
+                                  {isMine && (
+                                    <>
+                                      <li className="my-1 h-px bg-base-200" />
+                                      <li>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleDeleteComment(c._id)
+                                          }
+                                          className={MENU_ITEM_DANGER}
+                                        >
+                                          <FiTrash2 />
+                                          Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  )}
+                                </ul>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openReply(c)}
-                                className="btn btn-ghost btn-xs btn-circle border border-base-300 bg-base-100 shadow-sm text-base-content/70 hover:bg-base-200/50 hover:text-base-content"
-                                title="Reply"
-                                aria-label="Reply"
-                              >
-                                <FiCornerUpLeft size={15} />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleToggleCommentLike(c._id)}
-                                disabled={togglingLikeId === c._id}
-                                className={`btn btn-ghost btn-xs btn-circle border border-base-300 bg-base-100 shadow-sm hover:bg-base-200/50 ${
-                                  liked
-                                    ? "text-red-500"
-                                    : "text-base-content/70 hover:text-base-content"
-                                }`}
-                                title={liked ? "Unlike" : "Like"}
-                                aria-label={liked ? "Unlike" : "Like"}
-                              >
-                                {togglingLikeId === c._id ? (
-                                  <span className="loading loading-spinner loading-xs" />
-                                ) : liked ? (
-                                  <AiFillHeart size={16} />
-                                ) : (
-                                  <AiOutlineHeart size={16} />
-                                )}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(
-                                    `/comments/${c._id}?eventId=${cleanEventId}`,
-                                    { state: { comment: c } },
-                                  );
-                                }}
-                                className="btn btn-ghost btn-xs btn-circle border border-base-300 bg-base-100 shadow-sm text-base-content/70 hover:bg-base-200/50 hover:text-base-content"
-                                title="View comment"
-                                aria-label="View comment"
-                              >
-                                <FiMessageCircle size={15} />
-                              </button>
-
-                              {isMine && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteComment(c._id)}
-                                  className="btn btn-ghost btn-xs btn-circle border border-base-300 bg-base-100 shadow-sm text-base-content/70 hover:bg-base-200/50 hover:text-base-content"
-                                  title="Delete comment"
-                                  aria-label="Delete comment"
-                                >
-                                  <FiTrash2 />
-                                </button>
-                              )}
-                            </div>
+                            <div className="mt-3 h-px bg-indigo-200/30" />
                           </div>
-
-                          <p className="mt-2 text-sm leading-relaxed opacity-85">
-                            {c.text}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </PageLayout>
   );

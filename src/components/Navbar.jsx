@@ -2,7 +2,9 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/auth.context";
 import { LangContext } from "../context/lang.context";
-import { FiUser, FiLogOut, FiLogIn, FiMenu, FiGlobe } from "react-icons/fi";
+import { FiLogIn, FiMenu, FiGlobe, FiLogOut, FiUser } from "react-icons/fi";
+
+import UserMenu from "../components/UserMenu";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -10,7 +12,12 @@ export default function Navbar() {
   const { toggleLang, t } = useContext(LangContext);
 
   const linkClass = ({ isActive }) =>
-    `btn btn-ghost btn-sm ${isActive ? "btn-active" : ""}`;
+    `inline-flex items-center rounded-full px-3 h-8 text-sm font-semibold transition border
+   ${
+     isActive
+       ? "bg-indigo-100 border-indigo-300 text-indigo-800"
+       : "bg-transparent border-transparent hover:bg-indigo-100/70 hover:border-indigo-300/70"
+   }`;
 
   const mobileItemClass = ({ isActive }) =>
     `justify-start ${isActive ? "active font-semibold" : ""}`;
@@ -21,8 +28,8 @@ export default function Navbar() {
   };
 
   return (
-    <div className="bg-base-100 border-b border-base-300">
-      <div className="navbar max-w-6xl mx-auto px-4">
+    <div className="bg-indigo-100 border-b border-indigo-200 shadow-sm sticky top-0 z-50">
+      <div className="navbar min-h-[48px] max-w-6xl mx-auto px-4 py-0.5">
         {/* LEFT */}
         <div className="navbar-start">
           <Link
@@ -35,18 +42,14 @@ export default function Navbar() {
 
         {/* CENTER – Desktop */}
         <div className="navbar-center hidden md:flex">
-          <ul className="menu menu-horizontal px-1 gap-1">
-            <li>
-              <NavLink to="/" className={linkClass}>
-                {t.navHome}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/events" className={linkClass}>
-                {t.navEvents}
-              </NavLink>
-            </li>
-          </ul>
+          <div className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 shadow-sm">
+            <NavLink to="/" className={linkClass}>
+              {t.navHome}
+            </NavLink>
+            <NavLink to="/events" className={linkClass}>
+              {t.navEvents}
+            </NavLink>
+          </div>
         </div>
 
         {/* RIGHT */}
@@ -55,7 +58,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={toggleLang}
-            className="btn btn-ghost btn-sm border border-base-300 gap-2 hidden md:inline-flex"
+            className="hidden md:inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 h-8 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition active:scale-[0.98]"
             title={t.toggleLanguage}
             aria-label={t.toggleLanguage}
           >
@@ -65,25 +68,13 @@ export default function Navbar() {
 
           {isLoggedIn ? (
             <>
-              {/* User -> Profile */}
-              <NavLink
-                to="/profile"
-                className="hidden sm:inline-flex items-center gap-2 opacity-80 hover:opacity-100 transition"
-                title={t?.meTitle || "My profile"}
-              >
-                <FiUser />
-                <span className="font-semibold">{user?.name || "User"}</span>
-              </NavLink>
-
-              {/* Logout (desktop) */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="btn btn-outline btn-sm gap-2 hidden md:inline-flex"
-              >
-                <FiLogOut />
-                {t.logout}
-              </button>
+              {/* Desktop user dropdown */}
+              <UserMenu
+                username={user?.name || "User"}
+                t={t}
+                onLogout={handleLogout}
+                className="hidden md:inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 h-8 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 transition active:scale-[0.98]"
+              />
             </>
           ) : (
             <>
@@ -140,6 +131,28 @@ export default function Navbar() {
                   <li>
                     <NavLink to="/profile" className={mobileItemClass}>
                       {t?.meTitle || "My profile"}
+                    </NavLink>
+                  </li>
+
+                  {/* Extra links requested (mobile too) */}
+                  <li>
+                    <NavLink to="/my-events" className={mobileItemClass}>
+                      My events
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/attending" className={mobileItemClass}>
+                      Attending
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/favorites" className={mobileItemClass}>
+                      Favorites
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/events/new" className={mobileItemClass}>
+                      New event
                     </NavLink>
                   </li>
                 </>

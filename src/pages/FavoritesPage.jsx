@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { FiArrowLeft, FiLoader, FiAlertTriangle } from "react-icons/fi";
 
 import favoritesService from "../services/favorites.service";
 import EventCard from "../components/EventCard";
 import PageLayout from "../layouts/PageLayout";
+
+const PILL_INFO =
+  "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-medium shadow-sm";
+
+const PILL_BACK =
+  "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-medium shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]";
 
 function IconText({ icon: Icon, children }) {
   return (
@@ -19,18 +25,40 @@ function isValidMongoId(value) {
   return /^[a-f\d]{24}$/i.test(String(value || ""));
 }
 
+// Seguridad básica: solo rutas internas (empiezan por "/") y nada de urls raras
+function normalizeInternalPath(value) {
+  const v = typeof value === "string" ? value.trim() : "";
+  if (!v) return "";
+  if (!v.startsWith("/")) return "";
+  if (v.startsWith("//")) return "";
+  return v;
+}
+
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const location = useLocation();
+
+  const KEY = "eh:lastFrom:favorites";
 
   const [toast, setToast] = useState({
     show: false,
     message: "",
-    variant: "success", // "success" | "info" | "error"
+    variant: "success",
     actionLabel: "",
     actionHref: "",
   });
+
+  useEffect(() => {
+    const incomingFrom = normalizeInternalPath(location.state?.from);
+    if (incomingFrom) sessionStorage.setItem(KEY, incomingFrom);
+  }, [location.state]);
+
+  const backTo = useMemo(() => {
+    const incomingFrom = normalizeInternalPath(location.state?.from);
+    return incomingFrom || sessionStorage.getItem(KEY) || "/events";
+  }, [location.state]);
 
   const showToast = ({
     message,
@@ -129,9 +157,6 @@ export default function FavoritesPage() {
     }
   };
 
-  const PILL_BTN =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-base-200 transition active:scale-[0.98]";
-
   return (
     <PageLayout>
       {toast.show && (
@@ -160,46 +185,46 @@ export default function FavoritesPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-4">
-        <Link to="/events" className={PILL_BTN}>
-          <FiArrowLeft />
-          Back
-        </Link>
-      </div>
+      <div className="max-w-5xl mx-auto">
+        <header className="mt-3 mb-6">
+          <h1 className="text-4xl font-black">Favorites</h1>
 
-      <header className="mt-4 mb-6">
-        <h1 className="text-4xl font-black">Favorites</h1>
+          <div className="mt-3 flex items-center justify-between gap-4">
+            <Link to={backTo} className={PILL_BACK}>
+              <FiArrowLeft />
+              Back
+            </Link>
 
-        {!isLoading && !error && (
-          <p className="opacity-70 mt-2">
-            {sortedFavorites.length} saved event
-            {sortedFavorites.length !== 1 && "s"}
-          </p>
+            {!isLoading && !error && (
+              <span className={PILL_INFO}>
+                {sortedFavorites.length} saved event
+                {sortedFavorites.length !== 1 && "s"}
+              </span>
+            )}
+          </div>
+        </header>
+
+        {isLoading ? (
+          <IconText icon={FiLoader}>Loading…</IconText>
+        ) : error ? (
+          <div className="alert alert-error">
+            <IconText icon={FiAlertTriangle}>{error}</IconText>
+          </div>
+        ) : sortedFavorites.length === 0 ? (
+          <p className="opacity-70">You don’t have any favorites yet.</p>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 items-stretch">
+            {sortedFavorites.map((ev) => (
+              <EventCard
+                key={ev._id}
+                event={ev}
+                onShare={handleShare}
+                onRemove={handleRemoveFavorite}
+              />
+            ))}
+          </div>
         )}
-      </header>
-
-      {isLoading ? (
-        <IconText icon={FiLoader}>Loading…</IconText>
-      ) : error ? (
-        <div className="alert alert-error">
-          <IconText icon={FiAlertTriangle}>{error}</IconText>
-        </div>
-      ) : sortedFavorites.length === 0 ? (
-        <p className="opacity-70">You don’t have any favorites yet.</p>
-      ) : (
-        <div className="grid gap-4">
-          {sortedFavorites.map((ev) => (
-            <EventCard
-              key={ev._id}
-              event={ev}
-              isFavorited
-              onToggleFavorite={handleRemoveFavorite}
-              onShare={handleShare}
-              onRemove={handleRemoveFavorite}
-            />
-          ))}
-        </div>
-      )}
+      </div>
     </PageLayout>
   );
 }

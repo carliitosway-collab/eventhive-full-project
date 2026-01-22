@@ -44,3 +44,16 @@ a {
     padding-right: 1.5rem;
   }
 }
+
+@keyframes soft-wiggle {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  50% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+
+.hover-soft-wiggle:hover {
+  animation: soft-wiggle 0.18s ease-in-out 2;
+}
+

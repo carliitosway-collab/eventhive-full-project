@@ -6,8 +6,6 @@ import {
   FiAlertTriangle,
   FiCalendar,
   FiMapPin,
-  FiType,
-  FiFileText,
   FiLock,
   FiImage,
   FiTag,
@@ -97,21 +95,34 @@ export default function EditEventPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Consistencia: mismas pills indigo que en EventsList / Create
   const PILL_BTN =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 px-3 py-1 text-sm font-medium shadow-sm hover:bg-base-200 transition active:scale-[0.98]";
-  const PILL_PRIMARY =
-    "inline-flex items-center gap-2 rounded-full border border-primary px-3 py-1 text-sm font-semibold shadow-sm bg-primary text-primary-content hover:brightness-95 transition active:scale-[0.98]";
-  const PILL_DISABLED = "opacity-60 cursor-not-allowed";
-  const PILL_PRIMARY_SOFT =
-    "inline-flex items-center gap-2 rounded-full border border-primary px-3 py-1 text-sm font-semibold text-primary bg-base-100 shadow-sm hover:bg-base-200 transition active:scale-[0.98]";
+    "inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-2.5 py-1 text-xs font-medium shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]";
 
-  const PILL_STATIC =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 px-3 py-1 text-sm font-medium shadow-sm";
+  const PILL_DISABLED = "opacity-60 cursor-not-allowed saturate-0";
 
-  // unified “visible input” style
-  const FIELD =
-    "bg-base-100 border-base-300 focus:border-primary focus:outline-none";
+  const FIELD_WRAP =
+    "rounded-full border border-indigo-200/70 bg-base-100 h-8 px-3 flex items-center transition focus-within:border-indigo-300";
+
+  const FIELD_INPUT =
+    "w-full bg-transparent border-0 p-0 text-sm leading-none focus:outline-none";
+
+  const AREA_WRAP =
+    "rounded-2xl border border-indigo-200/70 bg-base-100 p-3 transition focus-within:border-indigo-300";
+  const AREA_INPUT =
+    "w-full resize-none bg-transparent border-0 p-0 text-sm leading-relaxed focus:outline-none";
+
+  const PILL_BACK =
+    "inline-flex items-center gap-1.5 rounded-full border border-indigo-300 bg-indigo-100 text-indigo-700 px-2 py-2 text-sm font-medium shadow-md hover:bg-indigo-200 transition active:scale-[0.98]";
+
+  const PILL_SAVE =
+    "inline-flex items-center rounded-full bg-indigo-600 text-white px-2 py-2 text-sm font-medium shadow-md hover:bg-indigo-700 transition active:scale-[0.98]";
 
   const userIdFromToken = useMemo(() => {
     if (!token) return null;
@@ -233,7 +244,7 @@ export default function EditEventPage() {
           </Link>
         </div>
 
-        <header className="mt-4 mb-4">
+        <header className="mt-4 mb-3">
           <h1 className="text-3xl font-bold">Edit Event</h1>
           <p className="opacity-70 mt-2">Loading event details…</p>
         </header>
@@ -303,54 +314,44 @@ export default function EditEventPage() {
 
   return (
     <PageLayout>
-      <header className="mt-4 mb-6 px-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black">Edit Event</h1>
-          <p className="opacity-70 mt-2">Update your event and save changes.</p>
+      <header className="sticky top-0 z-30 bg-indigo-50/90 backdrop-blur-md border-0 shadow-none py-2">
+        <div
+          className={`text-center max-w-lg mx-auto transition-all duration-500 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
+          }`}
+        >
+          <h1 className="text-3xl md:text-4xl font-black leading-tight">
+            Edit Event
+          </h1>
+
+          <p className="opacity-70 mt-1 text-sm">
+            Update your event and save changes.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link to={`/events/${eventId}`} className={PILL_BTN}>
+        <div className="max-w-lg mx-auto mt-2 flex justify-between items-center px-0">
+          <Link to={`/events/${eventId}`} className={PILL_BACK}>
             <FiArrowLeft />
             Back
           </Link>
-
-          <button
-            type="submit"
-            form="edit-event-form"
-            disabled={isSaving}
-            className={`${PILL_BTN} ${isSaving ? PILL_DISABLED : ""}`}
-          >
-            {isSaving ? (
-              <>
-                <span className="loading loading-spinner loading-sm" />
-                Saving…
-              </>
-            ) : (
-              <>Save changes</>
-            )}
-          </button>
         </div>
       </header>
 
-      <section className="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-        <div className="card-body gap-6">
+      <section className="card rounded-3xl border border-indigo-200/70 bg-indigo-50/50 shadow-md max-w-lg mx-auto">
+        <div className="card-body gap-6 p-7 md:p-8">
           <form
             id="edit-event-form"
             onSubmit={handleSubmit}
             className="grid gap-6"
             noValidate
           >
-            {/* Main info */}
-
             <div className="grid gap-1">
-              {/* Title */}
               <label className="form-control">
                 <span className="label-text font-semibold">Title</span>
 
-                <div className="rounded-xl border border-base-300 bg-base-100 px-3 py-2">
+                <div className={`${FIELD_WRAP} w-full md:max-w-[420px]`}>
                   <input
-                    className="w-full border-0 bg-transparent p-0 text-base focus:outline-none"
+                    className={FIELD_INPUT}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Ocean Meetup"
@@ -360,12 +361,12 @@ export default function EditEventPage() {
                 </div>
               </label>
 
-              {/* Description */}
               <label className="form-control">
                 <span className="label-text font-semibold">Description</span>
-                <div className="rounded-xl border border-base-300 bg-base-100 p-2.5 transition focus-within:border-primary">
+
+                <div className={`${AREA_WRAP} w-full md:max-w-[420px]`}>
                   <textarea
-                    className="w-full resize-none border-0 bg-transparent p-0 text-base leading-relaxed focus:outline-none"
+                    className={AREA_INPUT}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Tell people what this event is about"
@@ -375,82 +376,93 @@ export default function EditEventPage() {
                 </div>
               </label>
             </div>
-            <div className="border-t border-base-200 pt-6" />
-            {/* Meta */}
+            <div className="border-t border-indigo-200/50 pt-6" />
             <div className="grid gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Date */}
+              <div className="grid grid-cols-1 md:grid-cols-[max-content_max-content] gap-x-8 gap-y-3 justify-start">
                 <label className="form-control">
                   <div className="label py-1">
-                    <span className="label-text font-semibold">Date</span>
+                    <span className="label-text font-semibold flex items-center gap-2">
+                      <FiCalendar className="text-violet-600" />
+                      Date
+                    </span>
                   </div>
-
-                  <div className="rounded-xl border border-base-300 bg-base-100 p-2.5 transition focus-within:border-primary">
-                    <input
-                      type="datetime-local"
-                      className="w-full border-0 bg-transparent p-0 text-base focus:outline-none"
-                      value={dateLocal}
-                      onChange={(e) => setDateLocal(e.target.value)}
-                      disabled={isSaving}
-                    />
+                  <div className="flex">
+                    <div className={`${FIELD_WRAP} w-full md:max-w-[180px]`}>
+                      <input
+                        type="datetime-local"
+                        className={FIELD_INPUT}
+                        value={dateLocal}
+                        onChange={(e) => setDateLocal(e.target.value)}
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
                 </label>
 
-                {/* Location */}
                 <label className="form-control">
                   <div className="label py-1">
-                    <span className="label-text font-semibold">Location</span>
+                    <span className="label-text font-semibold flex items-center gap-2">
+                      <FiMapPin className="text-red-500" />
+                      Location
+                    </span>
                   </div>
-
-                  <div className="rounded-xl border border-base-300 bg-base-100 p-2.5 transition focus-within:border-primary">
-                    <input
-                      className="w-full border-0 bg-transparent p-0 text-base focus:outline-none"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. Madrid"
-                      disabled={isSaving}
-                      autoComplete="off"
-                    />
+                  <div className="flex">
+                    <div className={`${FIELD_WRAP} w-full md:max-w-[180px]`}>
+                      <input
+                        className={FIELD_INPUT}
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="e.g. Madrid"
+                        disabled={isSaving}
+                        autoComplete="off"
+                      />
+                    </div>
                   </div>
                 </label>
 
-                {/* Category */}
                 <label className="form-control">
                   <div className="label py-1">
-                    <span className="label-text font-semibold">Category</span>
+                    <span className="label-text font-semibold flex items-center gap-2">
+                      <FiTag className="text-amber-500" />
+                      Category
+                    </span>
                   </div>
-
-                  <div className="rounded-xl border border-base-300 bg-base-100 p-2.5 transition focus-within:border-primary">
-                    <select
-                      className="w-full border-0 bg-transparent p-0 text-base focus:outline-none"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      disabled={isSaving}
-                    >
-                      {CATEGORY_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex">
+                    <div className={`${FIELD_WRAP} w-full md:max-w-[180px]`}>
+                      <select
+                        className={`${FIELD_INPUT} appearance-none`}
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        disabled={isSaving}
+                      >
+                        {CATEGORY_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </label>
 
-                {/* Image URL */}
                 <label className="form-control">
                   <div className="label py-1">
-                    <span className="label-text font-semibold">Image URL</span>
+                    <span className="label-text font-semibold flex items-center gap-2">
+                      <FiImage className="text-sky-500" />
+                      Image URL
+                    </span>
                   </div>
-
-                  <div className="rounded-xl border border-base-300 bg-base-100 p-2.5 transition focus-within:border-primary">
-                    <input
-                      className="w-full border-0 bg-transparent p-0 text-base focus:outline-none"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Paste an image URL (optional)"
-                      disabled={isSaving}
-                      autoComplete="off"
-                    />
+                  <div className="flex">
+                    <div className={`${FIELD_WRAP} w-full md:max-w-[180px]`}>
+                      <input
+                        className={FIELD_INPUT}
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        placeholder="Paste an image URL (optional)"
+                        disabled={isSaving}
+                        autoComplete="off"
+                      />
+                    </div>
                   </div>
                 </label>
               </div>
@@ -465,32 +477,41 @@ export default function EditEventPage() {
                   />
                 </div>
               )}
-
-              {/* Public toggle (compact) */}
               <div className="form-control">
-                <label className="label cursor-pointer justify-start gap-3 rounded-xl border border-base-300 bg-base-100 px-3 py-2 shadow-sm">
-                  <input
-                    type="checkbox"
-                    className="toggle bg-neutral checked:bg-neutral-content"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                    disabled={isSaving}
-                  />
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-200/70 bg-indigo-50/60 px-3 py-2 shadow-sm">
+                  {/* Toggle + text */}
+                  <label className="flex cursor-pointer items-center gap-3">
+                    <input
+                      type="checkbox"
+                      className="toggle bg-neutral checked:bg-neutral-content"
+                      checked={isPublic}
+                      onChange={(e) => setIsPublic(e.target.checked)}
+                      disabled={isSaving}
+                    />
 
-                  <div className="grid">
-                    <span className="font-semibold text-base-content">
-                      {isPublic ? "Public event" : "Private event"}
-                    </span>
-                    <span className="text-sm text-base-content/80">
-                      {isPublic
-                        ? "Visible to everyone."
-                        : "Only you can see it."}
-                    </span>
-                  </div>
-                </label>
+                    <div className="grid">
+                      <span className="font-medium text-sm text-indigo-900">
+                        {isPublic ? "Public event" : "Private event"}
+                      </span>
+                      <span className="text-xs text-indigo-700/80">
+                        {isPublic
+                          ? "Visible to everyone."
+                          : "Only you can see it."}
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Save button */}
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className={`${PILL_SAVE} ${isSaving ? PILL_DISABLED : ""}`}
+                  >
+                    {isSaving ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
               </div>
             </div>
-
             {error && (
               <div className="alert alert-error">
                 <IconText icon={FiAlertTriangle}>{error}</IconText>

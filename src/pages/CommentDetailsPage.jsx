@@ -6,6 +6,7 @@ import {
   FiAlertTriangle,
   FiMessageCircle,
   FiCalendar,
+  FiEye,
 } from "react-icons/fi";
 
 import commentsService from "../services/comments.service";
@@ -57,10 +58,38 @@ function timeAgo(dateValue) {
   return `${diffY}y`;
 }
 
+/* ✅ Pills globales (consistencia EventHive) */
+const PILL_STATIC =
+  "inline-flex items-center gap-2 rounded-full border border-base-300 px-4 py-1.5 text-sm font-medium shadow-sm";
+const PILL_BTN =
+  "inline-flex items-center gap-2 rounded-full border border-base-300 px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-base-200 transition active:scale-[0.98]";
+
+const PILL_INDIGO_STATIC = `${PILL_STATIC} border-indigo-200 bg-indigo-50 text-indigo-700`;
+const PILL_INDIGO_BTN = `${PILL_BTN} border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100`;
+
 export default function CommentDetailsPage() {
   const params = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const KEY = "eh:lastFrom";
+  useEffect(() => {
+    const from = location.state?.from;
+    if (typeof from === "string" && from.trim()) {
+      sessionStorage.setItem(KEY, from);
+    }
+  }, [location.state]);
+
+  const eventIdFromQuery = useMemo(() => {
+    const sp = new URLSearchParams(location.search);
+    const v = sp.get("eventId");
+    return extractObjectId(v);
+  }, [location.search]);
+
+  const backTo =
+    location.state?.from ||
+    sessionStorage.getItem(KEY) ||
+    (eventIdFromQuery ? `/events/${eventIdFromQuery}` : "/events");
 
   const rawCommentId = params?.commentId || "";
   const cleanCommentId = useMemo(
@@ -74,11 +103,7 @@ export default function CommentDetailsPage() {
   const [isLoading, setIsLoading] = useState(!stateComment);
   const [error, setError] = useState("");
 
-  const PILL_BTN =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-4 py-1.5 text-sm font-medium shadow-sm transition hover:bg-base-200 hover:shadow-md active:scale-[0.98]";
-
   useEffect(() => {
-    // ✅ si alguien entra con URL sucia, la limpiamos y reemplazamos
     if (rawCommentId && cleanCommentId && rawCommentId !== cleanCommentId) {
       navigate(`/comments/${cleanCommentId}`, {
         replace: true,
@@ -102,7 +127,6 @@ export default function CommentDetailsPage() {
       .getCommentDetails(cleanCommentId)
       .then((c) => setComment(c))
       .catch((err) => {
-        console.log(err);
         setError(getNiceError(err));
       })
       .finally(() => setIsLoading(false));
@@ -124,76 +148,113 @@ export default function CommentDetailsPage() {
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between gap-4">
-        <button type="button" className={PILL_BTN} onClick={() => navigate(-1)}>
-          <FiArrowLeft />
-          Back
-        </button>
-
-        {eventIdFromComment && (
-          <Link to={`/events/${eventIdFromComment}`} className={PILL_BTN}>
-            View event
+      <div className="mx-auto w-full max-w-5xl">
+        {/* Top bar */}
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            to={backTo}
+            className={`${PILL_INDIGO_BTN} bg-indigo-50/60 border-2 border-indigo-200`}
+          >
+            <FiArrowLeft className="opacity-80" />
+            Back
           </Link>
-        )}
-      </div>
 
-      <header className="mt-4 mb-6">
-        <h1 className="text-4xl md:text-5xl font-black">Comment Details</h1>
-        <p className="opacity-70 mt-2">Single comment view</p>
-      </header>
-
-      {isLoading ? (
-        <p className="opacity-75">
-          <IconText icon={FiLoader}>Loading…</IconText>
-        </p>
-      ) : error ? (
-        <div className="alert alert-error">
-          <IconText icon={FiAlertTriangle}>{error}</IconText>
+          {eventIdFromComment ? (
+            <Link
+              to={`/events/${eventIdFromComment}`}
+              className={PILL_INDIGO_BTN}
+            >
+              <FiEye className="opacity-80" />
+              View event
+            </Link>
+          ) : null}
         </div>
-      ) : !comment?._id ? (
-        <p className="opacity-70">Comment not found.</p>
-      ) : (
-        <div className="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-          <div className="card-body gap-4">
-            <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
-              <FiMessageCircle />
-              Comment
-            </h2>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-              <div className="min-w-0">
-                {authorIdFromComment ? (
-                  <Link
-                    to={`/users/${authorIdFromComment}`}
-                    className="font-semibold truncate hover:underline"
-                  >
-                    {comment?.author?.name || comment?.author?.email || "User"}
-                  </Link>
-                ) : (
-                  <div className="font-semibold truncate">
-                    {comment?.author?.name || comment?.author?.email || "User"}
-                  </div>
-                )}
+        {/* Header */}
+        <header className="mt-6 mb-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-black">Comment Details</h1>
+          <p className="opacity-70 mt-3 max-w-2xl mx-auto">
+            Single comment view
+          </p>
+        </header>
 
-                {comment?.createdAt && (
-                  <div className="opacity-60 inline-flex items-center gap-2 mt-1">
-                    <FiCalendar />
-                    {timeAgo(comment.createdAt)}
-                  </div>
-                )}
-              </div>
-
-              <span className="badge badge-outline border-base-300">
-                ID: {comment._id}
-              </span>
-            </div>
-
-            <p className="text-sm leading-relaxed opacity-85 whitespace-pre-wrap">
-              {comment?.text || ""}
+        {/* Body */}
+        {isLoading ? (
+          <div className="max-w-lg mx-auto">
+            <p className="opacity-75 inline-flex items-center gap-2">
+              <FiLoader className="animate-spin" />
+              Loading…
             </p>
           </div>
-        </div>
-      )}
+        ) : error ? (
+          <div className="max-w-lg mx-auto">
+            <div className="alert alert-error">
+              <IconText icon={FiAlertTriangle}>{error}</IconText>
+            </div>
+          </div>
+        ) : !comment?._id ? (
+          <p className="opacity-70 text-center">Comment not found.</p>
+        ) : (
+          <div className="card bg-indigo-50/60 border-2 border-indigo-200 rounded-2xl shadow-sm max-w-3xl mx-auto">
+            <div className="card-body gap-5 p-6 md:p-7">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-extrabold inline-flex items-center gap-2">
+                  <FiMessageCircle />
+                  Comment
+                </h2>
+              </div>
+
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  {/* avatar */}
+                  <div className="w-10 h-10 rounded-full border-2 border-indigo-200 bg-indigo-50 text-indigo-700 flex items-center justify-center font-black uppercase shrink-0">
+                    {(comment?.author?.name || comment?.author?.email || "U")
+                      .trim()
+                      .charAt(0)}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {authorIdFromComment ? (
+                        <Link
+                          to={`/users/${authorIdFromComment}`}
+                          className="font-bold truncate hover:underline"
+                          title={
+                            comment?.author?.name ||
+                            comment?.author?.email ||
+                            "User"
+                          }
+                        >
+                          {comment?.author?.name ||
+                            comment?.author?.email ||
+                            "User"}
+                        </Link>
+                      ) : (
+                        <span className="font-bold truncate">
+                          {comment?.author?.name ||
+                            comment?.author?.email ||
+                            "User"}
+                        </span>
+                      )}
+
+                      {comment?.createdAt ? (
+                        <span className="opacity-60 inline-flex items-center gap-2 whitespace-nowrap">
+                          <FiCalendar className="opacity-70" />
+                          {timeAgo(comment.createdAt)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="leading-relaxed opacity-85 whitespace-pre-wrap">
+                {comment?.text || ""}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </PageLayout>
   );
 }

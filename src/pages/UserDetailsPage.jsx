@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { FiArrowLeft, FiAlertTriangle, FiLoader, FiUser } from "react-icons/fi";
 
 import PageLayout from "../layouts/PageLayout";
@@ -31,10 +31,13 @@ function getNiceError(err) {
   return err?.response?.data?.message || "Something went wrong.";
 }
 
+/* ✅ Pills consistentes con EventHive */
+const PILL_BTN =
+  "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-sm font-medium text-indigo-700 shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]";
+
 export default function UserDetailsPage() {
   const params = useParams();
   const navigate = useNavigate();
-
   const rawUserId = params?.userId || "";
   const cleanUserId = useMemo(() => extractObjectId(rawUserId), [rawUserId]);
 
@@ -42,13 +45,25 @@ export default function UserDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const PILL_BTN =
-    "inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-4 py-1.5 text-sm font-medium shadow-sm transition hover:bg-base-200 hover:shadow-md active:scale-[0.98]";
+  const location = useLocation();
+  const KEY = "eh:lastFrom";
+
+  useEffect(() => {
+    const from = location.state?.from;
+    if (typeof from === "string" && from.trim()) {
+      sessionStorage.setItem(KEY, from);
+    }
+  }, [location.state]);
+
+  const backTo = location.state?.from || sessionStorage.getItem(KEY) || "/me";
 
   useEffect(() => {
     // limpiar URL sucia
     if (rawUserId && cleanUserId && rawUserId !== cleanUserId) {
-      navigate(`/users/${cleanUserId}`, { replace: true });
+      navigate(`/users/${cleanUserId}`, {
+        replace: true,
+        state: location.state,
+      });
       return;
     }
 
@@ -65,34 +80,32 @@ export default function UserDetailsPage() {
       .getUserDetails(cleanUserId)
       .then((u) => setUser(u))
       .catch((err) => {
-        console.log(err);
         setError(getNiceError(err));
       })
       .finally(() => setIsLoading(false));
-  }, [rawUserId, cleanUserId, navigate]);
+  }, [rawUserId, cleanUserId, navigate, location.state]);
 
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-between gap-4">
-          <button
-            type="button"
-            className={PILL_BTN}
-            onClick={() => navigate(-1)}
-          >
-            <FiArrowLeft />
+        <div className="mx-auto w-full max-w-5xl flex items-center justify-between gap-4">
+          <Link to={backTo} className={PILL_BTN}>
+            <FiArrowLeft className="opacity-80" />
             Back
-          </button>
+          </Link>
         </div>
 
-        <header className="mt-4 mb-6">
+        <header className="mt-6 mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-black">User Details</h1>
-          <p className="opacity-70 mt-2">Loading profile…</p>
+          <p className="opacity-70 mt-3 max-w-2xl mx-auto">Loading profile…</p>
         </header>
 
-        <p className="opacity-75">
-          <IconText icon={FiLoader}>Loading…</IconText>
-        </p>
+        <div className="max-w-lg mx-auto">
+          <p className="opacity-75 inline-flex items-center gap-2">
+            <FiLoader className="animate-spin" />
+            Loading…
+          </p>
+        </div>
       </PageLayout>
     );
   }
@@ -100,24 +113,26 @@ export default function UserDetailsPage() {
   if (error) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-between gap-4">
+        <div className="mx-auto w-full max-w-5xl flex items-center justify-between gap-4">
           <button
             type="button"
             className={PILL_BTN}
             onClick={() => navigate(-1)}
           >
-            <FiArrowLeft />
+            <FiArrowLeft className="opacity-80" />
             Back
           </button>
         </div>
 
-        <header className="mt-4 mb-6">
+        <header className="mt-6 mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-black">User Details</h1>
-          <p className="opacity-70 mt-2">Profile preview</p>
+          <p className="opacity-70 mt-3 max-w-2xl mx-auto">Profile preview</p>
         </header>
 
-        <div className="alert alert-error">
-          <IconText icon={FiAlertTriangle}>{error}</IconText>
+        <div className="max-w-lg mx-auto">
+          <div className="alert alert-error">
+            <IconText icon={FiAlertTriangle}>{error}</IconText>
+          </div>
         </div>
       </PageLayout>
     );
@@ -126,65 +141,48 @@ export default function UserDetailsPage() {
   if (!user?._id) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-between gap-4">
-          <button
-            type="button"
-            className={PILL_BTN}
-            onClick={() => navigate(-1)}
-          >
-            <FiArrowLeft />
+        <div className="mx-auto w-full max-w-5xl flex items-center justify-between gap-4">
+          <Link to={backTo} className={PILL_BTN}>
+            <FiArrowLeft className="opacity-80" />
             Back
-          </button>
+          </Link>
+
+          <Link to="/me" className={PILL_BTN}>
+            <FiUser className="opacity-80" />
+            My profile
+          </Link>
         </div>
 
-        <header className="mt-4 mb-6">
+        <header className="mt-6 mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-black">User Details</h1>
-          <p className="opacity-70 mt-2">Profile preview</p>
+          <p className="opacity-70 mt-3 max-w-2xl mx-auto">Profile preview</p>
         </header>
 
-        <p className="opacity-75">User not found.</p>
+        <p className="opacity-75 text-center">User not found.</p>
       </PageLayout>
     );
   }
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between gap-4">
-        <button type="button" className={PILL_BTN} onClick={() => navigate(-1)}>
-          <FiArrowLeft />
+      <div className="mx-auto w-full max-w-5xl flex items-center justify-between gap-4">
+        <Link to={backTo} className={PILL_BTN}>
+          <FiArrowLeft className="opacity-80" />
           Back
-        </button>
+        </Link>
 
         <Link to="/me" className={PILL_BTN}>
-          <FiUser />
+          <FiUser className="opacity-80" />
           My profile
         </Link>
       </div>
 
-      <header className="mt-4 mb-6">
+      <header className="mt-6 mb-8 text-center">
         <h1 className="text-4xl md:text-5xl font-black">User Details</h1>
-        <p className="opacity-70 mt-2">Profile preview</p>
+        <p className="opacity-70 mt-3 max-w-2xl mx-auto">Profile preview</p>
       </header>
 
-      <div className="card bg-base-100 border border-base-300 rounded-2xl shadow-sm">
-        <div className="card-body gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="badge badge-outline border-base-300">
-              ID: {user._id}
-            </span>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="text-sm opacity-70">Name</div>
-            <div className="text-lg font-bold">{user.name || "—"}</div>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="text-sm opacity-70">Email</div>
-            <div className="text-base">{user.email || "—"}</div>
-          </div>
-        </div>
-      </div>
+      <UserProfileCard user={user} />
     </PageLayout>
   );
 }

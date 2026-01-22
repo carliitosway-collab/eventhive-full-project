@@ -78,7 +78,7 @@ export default function LoginPage() {
         storeToken(token);
         return authenticateUser();
       })
-      .then(() => navigate("/profile"))
+      .then(() => navigate("/me"))
       .catch((error) => {
         const msg =
           error?.response?.data?.message ||
@@ -138,11 +138,7 @@ export default function LoginPage() {
                 <label className="form-control w-full">
                   <div className="label">
                     <span className="label-text font-semibold">Password</span>
-                    <span className="label-text-alt">
-                      <Link className="link link-hover" to="#">
-                        Forgot password?
-                      </Link>
-                    </span>
+                    <span className="label-text-alt"></span>
                   </div>
 
                   <div

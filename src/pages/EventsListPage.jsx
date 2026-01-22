@@ -9,11 +9,16 @@ import {
   FiSliders,
 } from "react-icons/fi";
 
+import { Link, useLocation } from "react-router-dom";
+import { AiOutlineHeart } from "react-icons/ai";
+import { FiPlus } from "react-icons/fi";
+
 import eventsService from "../services/events.service";
 import favoritesService from "../services/favorites.service";
 import EventCard from "../components/EventCard";
 import PageLayout from "../layouts/PageLayout";
 import { LangContext } from "../context/lang.context";
+import { AuthContext } from "../context/auth.context";
 
 function IconText({ icon: Icon, children, className = "" }) {
   return (
@@ -42,6 +47,7 @@ function isValidObjectId(id) {
 
 export default function EventsListPage() {
   const { t } = useContext(LangContext);
+  const { isLoggedIn } = useContext(AuthContext);
 
   const LIMIT = 12;
 
@@ -53,6 +59,8 @@ export default function EventsListPage() {
     limit: LIMIT,
   });
   const [page, setPage] = useState(1);
+  const routerLocation = useLocation();
+  const fromEvents = routerLocation.pathname + routerLocation.search;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -67,7 +75,7 @@ export default function EventsListPage() {
     actionHref: "",
   });
 
-  // ✅ Favorites state
+  // Favorites state
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
   const [togglingFavoriteId, setTogglingFavoriteId] = useState(null);
 
@@ -76,12 +84,16 @@ export default function EventsListPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [sort, setSort] = useState("date"); // "date" | "-date"
+  const [city, setCity] = useState("");
+  const [category, setCategory] = useState("");
 
   // Applied filters
   const [applied, setApplied] = useState({
     q: "",
     from: "",
     to: "",
+    city: "",
+    category: "",
     sort: "date",
   });
 
@@ -92,8 +104,10 @@ export default function EventsListPage() {
   const hasActiveFilters = useMemo(() => {
     return (
       (applied.q && applied.q.trim().length > 0) ||
+      (applied.city && applied.city.trim().length > 0) ||
       !!applied.from ||
       !!applied.to ||
+      (applied.category && applied.category.trim().length > 0) ||
       applied.sort !== "date"
     );
   }, [applied]);
@@ -105,13 +119,21 @@ export default function EventsListPage() {
       sort: appliedState.sort || "date",
     };
 
-    if (appliedState.q?.trim()) params.q = appliedState.q.trim();
+    // Combine search + city into q (backend search includes city already)
+    const qParts = [];
+    if (appliedState.q?.trim()) qParts.push(appliedState.q.trim());
+    if (appliedState.city?.trim()) qParts.push(appliedState.city.trim());
+    const qCombined = qParts.join(" ").trim();
+    if (qCombined) params.q = qCombined;
 
     const fromIso = toISOStartOfDay(appliedState.from);
     const toIso = toISOEndOfDay(appliedState.to);
-
     if (fromIso) params.from = fromIso;
     if (toIso) params.to = toIso;
+
+    if (appliedState.category?.trim()) {
+      params.category = appliedState.category.trim();
+    }
 
     return params;
   };
@@ -159,19 +181,16 @@ export default function EventsListPage() {
       });
   };
 
-  // ✅ Load favorites once (if user is logged in)
   const loadFavorites = () => {
     favoritesService
       .getMyFavorites()
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-
         const ids = new Set(
           list
             .map((e) => (typeof e === "string" ? e : e?._id))
             .filter((id) => isValidObjectId(id)),
         );
-
         setFavoriteIds(ids);
       })
       .catch(() => {
@@ -200,6 +219,8 @@ export default function EventsListPage() {
 
     const nextApplied = {
       q: q.trim(),
+      city: city.trim(),
+      category: category.trim(),
       from,
       to,
       sort,
@@ -214,8 +235,18 @@ export default function EventsListPage() {
     setFrom("");
     setTo("");
     setSort("date");
+    setCity("");
+    setCategory("");
 
-    const nextApplied = { q: "", from: "", to: "", sort: "date" };
+    const nextApplied = {
+      q: "",
+      city: "",
+      category: "",
+      from: "",
+      to: "",
+      sort: "date",
+    };
+
     setApplied(nextApplied);
 
     if (isFiltersOpen) setIsFiltersOpen(false);
@@ -241,7 +272,6 @@ export default function EventsListPage() {
     }, 2500);
   };
 
-  // ✅ Toggle favorite (POST/DELETE)
   const handleToggleFavorite = (eventId) => {
     if (!isValidObjectId(eventId)) return;
 
@@ -283,7 +313,6 @@ export default function EventsListPage() {
       .finally(() => setTogglingFavoriteId(null));
   };
 
-  // ✅ Share handler
   const handleShare = async (payload) => {
     const eventId =
       typeof payload === "string"
@@ -319,6 +348,8 @@ export default function EventsListPage() {
 
   const chipClass =
     "badge badge-outline border-base-300 gap-2 py-3 px-3 rounded-2xl";
+  const STAT_BADGE =
+    "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-medium shadow-sm";
 
   return (
     <PageLayout>
@@ -349,161 +380,276 @@ export default function EventsListPage() {
       )}
 
       {/* Header */}
-      <header className="mb-5">
+      <header className="mb-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black">
+            <h1 className="text-3xl md:text-4xl font-black">
               {t?.eventsTitle || "Events"}
             </h1>
             <p className="opacity-70 mt-2">{t?.eventsSubtitle || ""}</p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={STAT_BADGE}>
+                {meta?.total ?? 0} {t?.eventsLabel || "events"}
+              </span>
+
+              <span className={STAT_BADGE}>
+                {hasActiveFilters
+                  ? t?.filtersOn || "Filters: on"
+                  : t?.filtersOff || "Filters: off"}
+              </span>
+
+              <span className={STAT_BADGE}>
+                {sort === "date"
+                  ? t?.dateAsc || "Soonest"
+                  : t?.dateDesc || "Latest"}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Toolbar */}
-        <form onSubmit={handleApply} className="mt-5 grid gap-3">
-          <div className="flex items-center gap-2 w-full">
-            <div className="w-full lg:max-w-[38ch]">
-              <div className="join w-full">
-                <label className="input input-bordered border-r-0 join-item flex items-center gap-3 w-full h-9 px-4 rounded-l-2xl rounded-r-none">
-                  <FiSearch className="opacity-70" />
-                  <input
-                    type="text"
-                    className="grow"
-                    placeholder={t?.searchPlaceholder || "Search..."}
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    autoComplete="off"
-                  />
-                </label>
+        <div className="mt-4 rounded-3xl border border-indigo-300 bg-indigo-100 shadow-md p-4 md:p-5">
+          <form onSubmit={handleApply} className="mt-5 grid gap-3">
+            <div className="flex items-start gap-2 w-full">
+              <div className="w-full lg:max-w-[38ch]">
+                <div className="join w-full">
+                  <label className="input border-r-0 join-item flex items-center gap-3 w-full h-9 px-4 rounded-l-2xl rounded-r-none border border-indigo-200 bg-indigo-50 text-indigo-700 placeholder-indigo-400">
+                    <FiSearch className="opacity-70" />
+                    <input
+                      type="text"
+                      className="grow"
+                      placeholder={t?.searchPlaceholder || "Search..."}
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      autoComplete="off"
+                    />
+                  </label>
 
-                <button
-                  type="submit"
-                  className="btn join-item h-9 min-h-9 px-4 bg-primary text-primary-content border border-primary shadow-sm font-medium rounded-r-full rounded-l-none hover:brightness-95 active:scale-[0.98] transition"
-                  disabled={isLoading || isLoadingMore}
-                >
-                  {t?.search || "Search"}
-                </button>
+                  <button
+                    type="submit"
+                    className="btn join-item h-9 min-h-9 px-4 bg-primary text-primary-content border border-primary shadow-sm font-medium rounded-r-full rounded-l-none hover:brightness-95 active:scale-[0.98] transition"
+                    disabled={isLoading || isLoadingMore}
+                  >
+                    {t?.search || "Search"}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="ml-auto flex flex-wrap items-center gap-2 justify-end">
-              <button
-                type="button"
-                className="btn btn-outline rounded-2xl"
-                onClick={() => setIsFiltersOpen((v) => !v)}
-              >
-                <IconText icon={FiSliders}>{t?.filters || "Filters"}</IconText>
-              </button>
+              <div className="ml-auto -mt-4 + -mr-1 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-1 shadow-sm">
+                {isLoggedIn && (
+                  <Link
+                    to="/favorites"
+                    state={{ from: "/events" }}
+                    className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-medium shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]"
+                  >
+                    <AiOutlineHeart />
+                    {t?.favorites || "Favorites"}
+                  </Link>
+                )}
 
-              {hasActiveFilters && (
+                {isLoggedIn && (
+                  <Link
+                    to="/events/new"
+                    state={{ from: fromEvents }}
+                    className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-3 py-1 text-xs font-medium shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]"
+                  >
+                    <FiPlus />
+                    {t?.newEvent || "New event"}
+                  </Link>
+                )}
+
                 <button
                   type="button"
-                  className="btn btn-ghost border border-base-300 rounded-2xl"
-                  onClick={handleClear}
+                  className="btn btn-outline rounded-2xl"
+                  onClick={() => setIsFiltersOpen((v) => !v)}
                 >
-                  <IconText icon={FiX}>{t?.clear || "Clear"}</IconText>
+                  <IconText icon={FiSliders}>
+                    {t?.filters || "Filters"}
+                  </IconText>
                 </button>
-              )}
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm opacity-70 hidden sm:inline">
-                  {t?.sort || "Sort"}
-                </span>
-                <select
-                  className="select select-bordered rounded-full h-9 px-4 pr-8 text-sm font-medium"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value)}
-                >
-                  <option value="date">{t?.dateAsc || "Soonest"}</option>
-                  <option value="-date">{t?.dateDesc || "Latest"}</option>
-                </select>
-              </div>
-            </div>
-          </div>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost border border-base-300 rounded-2xl"
+                    onClick={handleClear}
+                  >
+                    <IconText icon={FiX}>{t?.clear || "Clear"}</IconText>
+                  </button>
+                )}
 
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2">
-              {applied.q?.trim() && (
-                <span className={chipClass}>
-                  <FiSearch />
-                  <span className="max-w-[240px] truncate">
-                    {applied.q.trim()}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm opacity-70 hidden sm:inline">
+                    {t?.sort || "Sort"}
                   </span>
-                </span>
-              )}
-              {applied.from && (
-                <span className={chipClass}>
-                  <FiCalendar />
-                  {t?.from || "From"}: {applied.from}
-                </span>
-              )}
-              {applied.to && (
-                <span className={chipClass}>
-                  <FiCalendar />
-                  {t?.to || "To"}: {applied.to}
-                </span>
-              )}
-              {applied.sort !== "date" && (
-                <span className={chipClass}>
-                  <FiChevronDown />
-                  {t?.dateDesc || "Latest"}
-                </span>
-              )}
-            </div>
-          )}
-
-          {isFiltersOpen && (
-            <div className="card bg-base-100 border border-base-300 rounded-2xl">
-              <div className="card-body p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                  <label className="form-control w-full">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold flex items-center gap-2">
-                        <FiCalendar />
-                        {t?.from || "From"}
-                      </span>
-                    </div>
-                    <input
-                      type="date"
-                      value={from}
-                      onChange={(e) => setFrom(e.target.value)}
-                      className="input input-bordered rounded-full h-9 min-h-9 px-4 bg-base-100 shadow-sm border border-base-300 focus:outline-none focus:border-primary/60 focus:shadow-md w-fit min-w-[160px] max-w-[180px]"
-                    />
-                  </label>
-
-                  <label className="form-control w-full">
-                    <div className="flex items-center gap-3 md:justify-start">
-                      <span className="font-bold flex items-center gap-2">
-                        <FiCalendar />
-                        {t?.to || "To"}
-                      </span>
-                    </div>
-                    <input
-                      type="date"
-                      value={to}
-                      onChange={(e) => setTo(e.target.value)}
-                      min={from || undefined}
-                      className="input input-bordered rounded-full h-9 min-h-9 px-4 bg-base-100 shadow-sm border border-base-300 focus:outline-none focus:border-primary/60 focus:shadow-md w-fit min-w-[160px] max-w-[180px]"
-                    />
-                  </label>
-
-                  <div className="flex items-center md:justify-end justify-center">
-                    <button
-                      type="submit"
-                      className="btn rounded-full h-9 min-h-9 px-6 text-sm font-semibold bg-primary text-primary-content border border-primary/70 shadow-sm hover:shadow-md hover:brightness-95 active:scale-95 transition w-fit"
-                    >
-                      {t?.apply || "Apply"}
-                    </button>
-                  </div>
-
-                  <p className="text-sm opacity-60 leading-snug md:col-span-3">
-                    {t?.tip || "Tip: search first, then narrow by dates."}
-                  </p>
+                  <select
+                    className="select rounded-full h-8 px-3 pr-7 text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                  >
+                    <option value="date">{t?.dateAsc || "Soonest"}</option>
+                    <option value="-date">{t?.dateDesc || "Latest"}</option>
+                  </select>
                 </div>
               </div>
             </div>
-          )}
-        </form>
+
+            {hasActiveFilters && (
+              <div className="flex flex-wrap items-center gap-2">
+                {applied.q?.trim() && (
+                  <span className={chipClass}>
+                    <FiSearch />
+                    <span className="max-w-[240px] truncate">
+                      {applied.q.trim()}
+                    </span>
+                  </span>
+                )}
+
+                {applied.city?.trim() && (
+                  <span className={chipClass}>
+                    <span className="max-w-[240px] truncate">
+                      {applied.city.trim()}
+                    </span>
+                  </span>
+                )}
+
+                {applied.category?.trim() && (
+                  <span className={chipClass}>
+                    <span className="max-w-[240px] truncate">
+                      {applied.category.trim()}
+                    </span>
+                  </span>
+                )}
+
+                {applied.from && (
+                  <span className={chipClass}>
+                    <FiCalendar />
+                    {t?.from || "From"}: {applied.from}
+                  </span>
+                )}
+
+                {applied.to && (
+                  <span className={chipClass}>
+                    <FiCalendar />
+                    {t?.to || "To"}: {applied.to}
+                  </span>
+                )}
+
+                {applied.sort !== "date" && (
+                  <span className={chipClass}>
+                    <FiChevronDown />
+                    {t?.dateDesc || "Latest"}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {isFiltersOpen && (
+              <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 shadow-sm">
+                <div className="p-4">
+                  <div className="flex flex-wrap items-end gap-3">
+                    {/* Capsule: From → To */}
+                    <div className="flex items-end gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+                      <label className="form-control">
+                        <span className="mb-1 text-xs font-semibold inline-flex items-center gap-1.5 text-indigo-900">
+                          <FiCalendar />
+                          {t?.from || "From"}
+                        </span>
+                        <input
+                          type="date"
+                          value={from}
+                          onChange={(e) => setFrom(e.target.value)}
+                          className="input rounded-full h-8 min-h-8 px-3 bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm shadow-sm focus:outline-none focus:border-indigo-300 focus:shadow-md min-w-[130px]"
+                        />
+                      </label>
+
+                      <span className="pb-2 text-indigo-400 font-semibold">
+                        →
+                      </span>
+
+                      <label className="form-control">
+                        <span className="mb-1 text-xs font-semibold inline-flex items-center gap-1.5 text-indigo-900">
+                          <FiCalendar />
+                          {t?.to || "To"}
+                        </span>
+                        <input
+                          type="date"
+                          value={to}
+                          onChange={(e) => setTo(e.target.value)}
+                          min={from || undefined}
+                          className="input rounded-full h-8 min-h-8 px-3 bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm shadow-sm focus:outline-none focus:border-indigo-300 focus:shadow-md min-w-[130px]"
+                        />
+                      </label>
+                    </div>
+
+                    {/* City */}
+                    <label className="form-control">
+                      <span className="mb-1 text-xs font-semibold text-indigo-900">
+                        {t?.city || "City"}
+                      </span>
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder={t?.cityPh || "e.g. Madrid,"}
+                        className="input rounded-full h-8 min-h-8 px-3 bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm shadow-sm focus:outline-none focus:border-indigo-300 focus:shadow-md min-w-[200px]"
+                      />
+                    </label>
+
+                    {/* Category */}
+                    <label className="form-control">
+                      <span className="mb-1 text-xs font-semibold text-indigo-900">
+                        {t?.category || "Category"}
+                      </span>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="select rounded-full h-8 px-3 pr-8 text-sm font-medium border border-indigo-200 bg-indigo-50 text-indigo-900 hover:bg-indigo-100 transition min-w-[160px]"
+                      >
+                        <option value="">{t?.all || "All"}</option>
+                        <option value="Tech">Tech</option>
+                        <option value="Music">Music</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Food">Food</option>
+                        <option value="Networking">Networking</option>
+                        <option value="Art">Art</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Education">Education</option>
+                        <option value="Business">Business</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </label>
+
+                    {/* Apply */}
+                    <div className="flex items-center md:ml-auto">
+                      <button
+                        type="submit"
+                        className="inline-flex items-center justify-center rounded-full h-9 min-h-9 px-6 text-sm font-semibold bg-primary text-primary-content border border-primary shadow-sm hover:shadow-md hover:brightness-95 transition active:scale-[0.98] w-fit"
+                      >
+                        {t?.apply || "Apply"}
+                      </button>
+                    </div>
+
+                    <p className="text-sm text-indigo-700/70 leading-snug w-full">
+                      {t?.tip || "Tip: search first, then narrow by dates."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between mb-4 text-sm opacity-70 gap-2">
+              <span>
+                {t?.showing || "Showing"} {events.length} {t?.of || "of"}{" "}
+                {meta.total}
+              </span>
+              <span>
+                {t?.page || "Page"} {meta.page} {t?.of || "of"} {meta.pages}
+              </span>
+            </div>
+          </form>
+        </div>
       </header>
 
       {/* Body */}
@@ -530,39 +676,46 @@ export default function EventsListPage() {
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between mb-4 text-sm opacity-70 gap-2">
-            <span>
-              {t?.showing || "Showing"} {events.length} {t?.of || "of"}{" "}
-              {meta.total}
-            </span>
-            <span>
-              {t?.page || "Page"} {meta.page} {t?.of || "of"} {meta.pages}
-            </span>
-          </div>
+          {(() => {
+            const validEvents = events.filter((ev) => isValidObjectId(ev?._id));
+            if (validEvents.length === 0) return null;
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-            {events.map((ev) => {
-              const id = ev?._id;
-              if (!isValidObjectId(id)) return null;
+            const [featured, ...rest] = validEvents;
 
-              return (
-                <EventCard
-                  key={id}
-                  event={ev}
-                  isFavorited={favoriteIds.has(id)}
-                  isTogglingFavorite={togglingFavoriteId === id}
-                  onToggleFavorite={handleToggleFavorite}
-                  onShare={handleShare}
-                />
-              );
-            })}
-          </div>
+            return (
+              <>
+                <div className="mb-6">
+                  <EventCard
+                    event={featured}
+                    isFavorited={favoriteIds.has(featured._id)}
+                    isTogglingFavorite={togglingFavoriteId === featured._id}
+                    onToggleFavorite={handleToggleFavorite}
+                    onShare={handleShare}
+                    featured
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+                  {rest.map((ev) => (
+                    <EventCard
+                      key={ev._id}
+                      event={ev}
+                      isFavorited={favoriteIds.has(ev._id)}
+                      isTogglingFavorite={togglingFavoriteId === ev._id}
+                      onToggleFavorite={handleToggleFavorite}
+                      onShare={handleShare}
+                    />
+                  ))}
+                </div>
+              </>
+            );
+          })()}
 
           <div className="mt-6 flex justify-center pb-20 md:pb-0">
             {canLoadMore ? (
               <button
                 type="button"
-                className="btn btn-primary btn-wide gap-2 rounded-2xl"
+                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 px-5 py-2 text-sm font-medium shadow-sm hover:bg-indigo-100 transition active:scale-[0.98]"
                 onClick={handleLoadMore}
                 disabled={isLoadingMore}
               >

@@ -24,14 +24,14 @@ import CommentDetailsPage from "./pages/CommentDetailsPage";
 
 function App() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#eef2ff]">
       {/* Desktop navbar */}
       <div className="hidden md:block">
         <Navbar />
       </div>
 
       {/* Main content (extra bottom padding for mobile bottom nav) */}
-      <div className="pb-20 md:pb-0">
+      <div className="pb-20 md:pb-0 pt-2 md:pt-6">
         <Routes>
           {/* Public */}
           <Route path="/" element={<HomePage />} />

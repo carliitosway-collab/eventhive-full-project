@@ -32,6 +32,14 @@ function getNiceError(err) {
   return err?.response?.data?.message || "Something went wrong.";
 }
 
+function getArrayFromResponse(res) {
+  const raw = res?.data;
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.data)) return raw.data;
+  if (Array.isArray(raw?.data?.data)) return raw.data.data;
+  return [];
+}
+
 function FeaturePill({ icon: Icon, label }) {
   return (
     <span className="badge badge-outline gap-2 py-3">
@@ -40,6 +48,12 @@ function FeaturePill({ icon: Icon, label }) {
     </span>
   );
 }
+
+/* Pill pattern (aligned with EventHive pills) */
+const PILL_BTN =
+  "inline-flex items-center gap-2 rounded-full border border-base-300 px-4 py-1.5 text-sm font-medium shadow-sm hover:bg-base-200 transition active:scale-[0.98]";
+
+const PILL_INDIGO_BTN = `${PILL_BTN} border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100`;
 
 export default function HomePage() {
   const { isLoggedIn } = useContext(AuthContext);
@@ -52,11 +66,10 @@ export default function HomePage() {
     setIsLoading(true);
     setError("");
 
-    // Backend now supports pagination/sort
     eventsService
       .getPublicEvents({ page: 1, limit: 3, sort: "date" })
       .then((res) => {
-        const list = res.data?.data || [];
+        const list = getArrayFromResponse(res);
         setEvents(list);
       })
       .catch((err) => {
@@ -85,14 +98,17 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 md:p-8">
           {/* Left */}
           <div className="flex flex-col gap-4">
-            <p className="text-sm font-bold opacity-70 tracking-wide">EventHive</p>
+            <p className="text-sm font-bold opacity-70 tracking-wide">
+              EventHive
+            </p>
 
             <h1 className="text-4xl md:text-5xl font-black leading-tight">
               Discover events and join in one click
             </h1>
 
             <p className="text-base opacity-80 max-w-xl">
-              Public events, favorites, attendance, and comments — all in one place. Simple and fast.
+              Public events, favorites, attendance, and comments — all in one
+              place. Simple and fast.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -131,11 +147,15 @@ export default function HomePage() {
               <div className="card-body gap-3">
                 <h2 className="card-title text-xl">Quick tip</h2>
                 <p className="opacity-80">
-                  Save events to your favorites so you can find them instantly later.
+                  Save events to your favorites so you can find them instantly
+                  later.
                 </p>
 
                 <div className="card-actions justify-start pt-1">
-                  <Link to="/favorites" className="btn btn-ghost gap-2">
+                  <Link
+                    to={isLoggedIn ? "/favorites" : "/signup"}
+                    className="btn btn-ghost gap-2"
+                  >
                     <FiHeart />
                     Go to favorites
                   </Link>
@@ -160,7 +180,8 @@ export default function HomePage() {
               <div className="card-body">
                 <h3 className="card-title">1. Explore events</h3>
                 <p className="opacity-80">
-                  Discover public events and open details to see date, location, and attendees.
+                  Discover public events and open details to see date, location,
+                  and attendees.
                 </p>
               </div>
             </div>
@@ -195,9 +216,10 @@ export default function HomePage() {
             <button
               type="button"
               onClick={fetchUpcoming}
-              className="btn btn-ghost btn-sm border border-base-300 gap-2"
+              className={PILL_INDIGO_BTN}
               disabled={isLoading}
               aria-label="Refresh"
+              title="Refresh"
             >
               <FiRefreshCcw />
               Refresh
@@ -217,7 +239,13 @@ export default function HomePage() {
           ) : error ? (
             <div className="alert alert-error">
               <IconText icon={FiAlertTriangle}>{error}</IconText>
-              <button type="button" onClick={fetchUpcoming} className="btn btn-sm btn-outline">
+
+              <button
+                type="button"
+                onClick={fetchUpcoming}
+                className={PILL_BTN}
+              >
+                <FiRefreshCcw />
                 Retry
               </button>
             </div>

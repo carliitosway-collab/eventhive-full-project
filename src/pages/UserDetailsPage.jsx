@@ -4,15 +4,7 @@ import { FiArrowLeft, FiAlertTriangle, FiLoader, FiUser } from "react-icons/fi";
 
 import PageLayout from "../layouts/PageLayout";
 import userService from "../services/user.service";
-
-function IconText({ icon: Icon, children, className = "" }) {
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Icon />
-      {children}
-    </span>
-  );
-}
+import IconText from "../components/IconText";
 
 function extractObjectId(value) {
   const s = String(value || "");

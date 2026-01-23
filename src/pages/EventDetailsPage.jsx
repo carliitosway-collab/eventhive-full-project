@@ -23,15 +23,7 @@ import commentsService from "../services/comments.service";
 import eventsService from "../services/events.service";
 import PageLayout from "../layouts/PageLayout";
 import useCleanObjectIdParam from "../hooks/useCleanObjectIdParam";
-
-function IconText({ icon: Icon, children, className = "" }) {
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Icon />
-      {children}
-    </span>
-  );
-}
+import IconText from "../components/IconText";
 
 function getNiceError(err) {
   const status = err?.response?.status;

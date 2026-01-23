@@ -17,15 +17,7 @@ import { AuthContext } from "../context/auth.context";
 import eventsService from "../services/events.service";
 import EventCard from "../components/EventCard";
 import PageLayout from "../layouts/PageLayout";
-
-function IconText({ icon: Icon, children, className = "" }) {
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Icon />
-      {children}
-    </span>
-  );
-}
+import IconText from "../components/IconText";
 
 function getNiceError(err) {
   if (!err?.response) return "No connection or the server is not responding.";

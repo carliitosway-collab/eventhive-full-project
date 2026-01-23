@@ -14,15 +14,7 @@ import {
 import eventsService from "../services/events.service";
 import { getNiceHttpError } from "../utils/httpErrors";
 import PageLayout from "../layouts/PageLayout";
-
-function IconText({ icon: Icon, children, className = "" }) {
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Icon />
-      {children}
-    </span>
-  );
-}
+import IconText from "../components/IconText";
 
 const CATEGORY_OPTIONS = [
   "Tech",

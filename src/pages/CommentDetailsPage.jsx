@@ -11,15 +11,7 @@ import {
 
 import commentsService from "../services/comments.service";
 import PageLayout from "../layouts/PageLayout";
-
-function IconText({ icon: Icon, children, className = "" }) {
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Icon />
-      {children}
-    </span>
-  );
-}
+import IconText from "../components/IconText";
 
 function extractObjectId(value) {
   const s = String(value || "");
